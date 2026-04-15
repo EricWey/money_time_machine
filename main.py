@@ -1,39 +1,38 @@
 from fastapi import FastAPI
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 import os
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
-from models import Base, MacroEconomics, CityData, CityPrice
+from supabase import create_client, Client
 
 class Settings(BaseSettings):
     """应用配置"""
     APP_NAME: str = "钱值时光机"
     APP_VERSION: str = "v1.0.0"
-    DATABASE_URL: str = "sqlite:///./money_time_machine.db"
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL")
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     model_config = ConfigDict(env_file=".env")
 
 settings = Settings()
 
-# 创建数据库引擎
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
-)
 
-# 创建会话工厂
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Supabase 客户端初始化
+supabase: Client = None
 
-# 创建数据库表
-Base.metadata.create_all(bind=engine)
+def init_supabase():
+    """初始化 Supabase 客户端"""
+    global supabase
+    supabase = create_client(
+        settings.SUPABASE_URL,
+        settings.SUPABASE_SERVICE_ROLE_KEY
+    )
 
-# 依赖项，用于获取数据库会话
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# 初始化 Supabase 客户端
+init_supabase()
+
+
+# 依赖项，用于获取 Supabase 客户端
+def get_supabase():
+    yield supabase
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -46,10 +45,8 @@ app = FastAPI(
 async def health_check():
     """健康检查接口"""
     try:
-        # 测试数据库连接
-        db = SessionLocal()
-        db.execute(text("SELECT 1"))
-        db.close()
+        # 测试 Supabase 连接
+        result = supabase.table("macro_economics").select("year").limit(1).execute()
         db_status = "connected"
     except Exception as e:
         db_status = f"error: {str(e)}"
