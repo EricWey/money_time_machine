@@ -74,13 +74,57 @@ class AIService:
     def generate_fallback_comment(self, source_year: int, amount: float, equivalent_amount: float) -> str:
         """
         生成备用评价（当AI服务不可用时使用）
-        
+
         Args:
             source_year: 起始年份
             amount: 原始金额
             equivalent_amount: 等价值
-            
+
         Returns:
             备用评价字符串
         """
         return f"时光荏苒，{source_year}年的{amount}元现在只值{equivalent_amount}元。"
+
+    def generate_custom_comment(self, prompt: str) -> Optional[str]:
+        """
+        生成自定义评价
+
+        Args:
+            prompt: 自定义提示词
+
+        Returns:
+            生成的评价字符串，生成失败返回None
+        """
+        if not self.api_key:
+            logger.warning("未配置DeepSeek API密钥，无法生成自定义评价")
+            return None
+
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.api_key}"
+            }
+
+            payload = {
+                "model": "deepseek-chat",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": self.temperature,
+                "max_tokens": 100
+            }
+
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=10)
+
+            if response.status_code == 200:
+                result = response.json()
+                comment = result["choices"][0]["message"]["content"].strip()
+                logger.info(f"自定义评价生成成功: {comment}")
+                return comment
+            else:
+                logger.error(f"DeepSeek API调用失败: {response.status_code}, {response.text}")
+                return None
+
+        except Exception as e:
+            logger.error(f"生成自定义评价时出错: {str(e)}")
+            return None

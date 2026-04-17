@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import os
 from typing import Optional, List
 from pydantic_settings import BaseSettings
@@ -68,6 +68,25 @@ class ConvertResponse(BaseModel):
     equivalent_amount: float
     items: List[Item]
     ai_comment: str
+
+class DriftRequest(BaseModel):
+    """财富漂流请求"""
+    current_city: str = Field(..., min_length=1, max_length=50, description="当前所在城市")
+    monthly_income: float = Field(..., gt=0, description="月收入金额，必须大于0")
+    target_city: str = Field(..., min_length=1, max_length=50, description="目标迁移城市")
+
+class DriftResponse(BaseModel):
+    """财富漂流响应"""
+    current_city: str
+    target_city: str
+    current_city_coli: float
+    target_city_coli: float
+    equivalent_amount: float
+    target_city_median_income: float
+    wealth_ratio: float
+    identity_label: str
+    city_comparison: str
+    ai_essay: str
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -199,3 +218,199 @@ async def convert_purchasing_power(request: ConvertRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"转换失败: {str(e)}")
+
+def get_city_data(city_name: str) -> Optional[dict]:
+    """
+    获取城市数据
+
+    Args:
+        city_name: 城市名称
+
+    Returns:
+        城市数据字典，不存在返回None
+    """
+    try:
+        result = supabase.table("city_data").select("*").eq("city_name", city_name).execute()
+        if result.data:
+            return result.data[0]
+        return None
+    except Exception as e:
+        logger.error(f"获取城市 {city_name} 数据时出错: {str(e)}")
+        return None
+
+def calculate_wealth_ratio(equivalent_amount: float, median_income: float) -> float:
+    """
+    计算财富比率
+
+    Args:
+        equivalent_amount: 等值收入
+        median_income: 中位数收入
+
+    Returns:
+        财富比率
+    """
+    if median_income <= 0:
+        return 0.0
+    return round(equivalent_amount / median_income, 2)
+
+def get_identity_label(wealth_ratio: float) -> str:
+    """
+    根据财富比率获取身份标签
+
+    Args:
+        wealth_ratio: 财富比率
+
+    Returns:
+        身份标签
+    """
+    if wealth_ratio > 5:
+        return "县城土豪"
+    elif wealth_ratio > 2:
+        return "体面名流"
+    elif wealth_ratio > 0.8:
+        return "平替生活"
+    else:
+        return "生存挑战"
+
+def generate_city_comparison(current_city: str, target_city: str, current_coli: float, target_coli: float) -> str:
+    """
+    生成城市对比描述
+
+    Args:
+        current_city: 当前城市
+        target_city: 目标城市
+        current_coli: 当前城市COLI指数
+        target_coli: 目标城市COLI指数
+
+    Returns:
+        对比描述文本
+    """
+    import random
+
+    comparisons = []
+
+    ratio = current_coli / target_coli if target_coli > 0 else 1
+
+    if ratio > 1.5:
+        comparisons.append(f"你在{current_city}租一室户的钱，在{target_city}能住带院子的二层楼")
+        comparisons.append(f"{current_city}的一碗面，够在{target_city}吃三顿")
+        comparisons.append(f"{current_city}地铁月卡的价格，够在{target_city}打车满城跑一个月")
+
+    elif ratio > 1:
+        comparisons.append(f"你在{current_city}月薪过万，扣除房租所剩无几；在{target_city}同样收入能过得体面")
+        comparisons.append(f"{current_city}的夜生活需要精打细算，{target_city}则可以随心所欲")
+        comparisons.append(f"同样的工资，在{current_city}是月光族，在{target_city}是小康水平")
+
+    elif ratio > 0.5:
+        comparisons.append(f"虽然{target_city}收入略低，但生活质量反而更高")
+        comparisons.append(f"在{current_city}舍不得打的，在{target_city}可以随时叫车")
+        comparisons.append(f"{current_city}的水电费，够在{target_city}交双份还有余")
+
+    else:
+        comparisons.append(f"无论在{current_city}还是{target_city}，都得精打细算过日子")
+        comparisons.append(f"两座城市的生活成本差距不大，关键看个人理财能力")
+        comparisons.append(f"物价差不多，但{target_city}或许有更好的发展机会")
+
+    return random.choice(comparisons)
+
+def generate_drift_essay(current_city: str, target_city: str, monthly_income: float,
+                         equivalent_amount: float, identity_label: str) -> str:
+    """
+    生成财富漂流感言
+
+    Args:
+        current_city: 当前城市
+        target_city: 目标城市
+        monthly_income: 月收入
+        equivalent_amount: 等值收入
+        identity_label: 身份标签
+
+    Returns:
+        AI生成的感言
+    """
+    prompt = f"你是一个经历过城市漂泊的财务专家。用户从{current_city}来到{target_city}，"
+    prompt += f"月薪{monthly_income}元，在新城市相当于{equivalent_amount}元的购买力。"
+    prompt += f"他的身份标签是'{identity_label}'。"
+    prompt += "请结合两座城市的生活差异，写一段50字以内的财富漂流感言，要有深度和共鸣。"
+
+    return ai_service.generate_custom_comment(prompt)
+
+@app.post("/api/v1/drift", response_model=DriftResponse)
+async def calculate_drift(request: DriftRequest):
+    """
+    财富漂流计算接口
+
+    Args:
+        request: 财富漂流请求
+
+    Returns:
+        财富漂流结果
+    """
+    try:
+        if request.current_city == request.target_city:
+            raise HTTPException(
+                status_code=422,
+                detail="当前城市和目标城市不能相同"
+            )
+
+        current_city_data = get_city_data(request.current_city)
+        if not current_city_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"城市 {request.current_city} 数据不存在"
+            )
+
+        target_city_data = get_city_data(request.target_city)
+        if not target_city_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"城市 {request.target_city} 数据不存在"
+            )
+
+        current_city_coli = current_city_data.get("coli_index", 0)
+        target_city_coli = target_city_data.get("coli_index", 0)
+        target_city_median_income = target_city_data.get("median_income", 0)
+
+        equivalent_amount = round(request.monthly_income * (current_city_coli / target_city_coli), 2)
+
+        wealth_ratio = calculate_wealth_ratio(equivalent_amount, target_city_median_income)
+
+        identity_label = get_identity_label(wealth_ratio)
+
+        city_comparison = generate_city_comparison(
+            request.current_city,
+            request.target_city,
+            current_city_coli,
+            target_city_coli
+        )
+
+        ai_essay = generate_drift_essay(
+            request.current_city,
+            request.target_city,
+            request.monthly_income,
+            equivalent_amount,
+            identity_label
+        )
+
+        if not ai_essay:
+            ai_essay = f"从{request.current_city}到{request.target_city}，你的财富购买力发生了变化。身份标签：{identity_label}。"
+
+        return {
+            "current_city": request.current_city,
+            "target_city": request.target_city,
+            "current_city_coli": current_city_coli,
+            "target_city_coli": target_city_coli,
+            "equivalent_amount": equivalent_amount,
+            "target_city_median_income": target_city_median_income,
+            "wealth_ratio": wealth_ratio,
+            "identity_label": identity_label,
+            "city_comparison": city_comparison,
+            "ai_essay": ai_essay
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"财富漂流计算失败: {str(e)}")
