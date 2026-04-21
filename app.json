@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/time_machine/time_machine",
+    "pages/wealth_drift/wealth_drift"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FDF5E6",
+    "navigationBarTitleText": "钱值时光机",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#666666",
+    "selectedColor": "#8B4513",
+    "backgroundColor": "#FDF5E6",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/time_machine/time_machine",
+        "text": "时光机",
+        "iconPath": "images/stamp_time.png",
+        "selectedIconPath": "images/stamp_time_active.png"
+      },
+      {
+        "pagePath": "pages/wealth_drift/wealth_drift",
+        "text": "财富漂流",
+        "iconPath": "images/stamp_wealth.png",
+        "selectedIconPath": "images/stamp_wealth_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

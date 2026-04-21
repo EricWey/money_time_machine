@@ -1,34 +1,59 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, field_validator
 import os
-from typing import Optional, List
-from pydantic_settings import BaseSettings
+import logging
+from typing import Optional, List, Any
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic import ConfigDict
-from supabase import create_client, Client
-from services.calculator import Calculator
+from pydantic_settings import BaseSettings
+
+try:
+    from supabase import create_client, Client
+except ImportError:  # pragma: no cover
+    create_client = None
+    Client = Any
+
 from services.ai_service import AIService
+from services.calculator import Calculator
+from services.fallback_data import FALLBACK_CITY_DATA, VALID_CITIES
+
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     """应用配置"""
     APP_NAME: str = "钱值时光机"
     APP_VERSION: str = "v1.0.0"
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    SUPABASE_URL: Optional[str] = os.getenv("SUPABASE_URL")
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     model_config = ConfigDict(env_file=".env")
 
 settings = Settings()
 
 
 # Supabase 客户端初始化
-supabase: Client = None
+supabase: Optional[Client] = None
 
 def init_supabase():
     """初始化 Supabase 客户端"""
     global supabase
-    supabase = create_client(
-        settings.SUPABASE_URL,
-        settings.SUPABASE_SERVICE_ROLE_KEY
-    )
+    if not create_client:
+        logger.warning("supabase 包未安装，使用本地兜底数据")
+        supabase = None
+        return
+
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
+        logger.warning("未配置 Supabase 环境变量，使用本地兜底数据")
+        supabase = None
+        return
+
+    try:
+        supabase = create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_SERVICE_ROLE_KEY
+        )
+    except Exception as exc:
+        logger.warning("Supabase 初始化失败，使用本地兜底数据: %s", exc)
+        supabase = None
 
 # 初始化 Supabase 客户端
 init_supabase()
@@ -36,10 +61,6 @@ init_supabase()
 # 初始化服务
 calculator = Calculator(supabase)
 ai_service = AIService()
-
-# 依赖项，用于获取 Supabase 客户端
-def get_supabase():
-    yield supabase
 
 # 数据模型
 class ConvertRequest(BaseModel):
@@ -51,9 +72,8 @@ class ConvertRequest(BaseModel):
     @field_validator('city')
     def validate_city(cls, v):
         """验证城市名称"""
-        valid_cities = ["北京", "上海", "广州", "深圳", "杭州", "成都", "武汉", "西安", "南京", "重庆"]
-        if v not in valid_cities:
-            raise ValueError(f"城市名称无效，支持的城市: {', '.join(valid_cities)}")
+        if v not in VALID_CITIES:
+            raise ValueError(f"城市名称无效，支持的城市: {', '.join(VALID_CITIES)}")
         return v
 
 class Item(BaseModel):
@@ -74,6 +94,12 @@ class DriftRequest(BaseModel):
     current_city: str = Field(..., min_length=1, max_length=50, description="当前所在城市")
     monthly_income: float = Field(..., gt=0, description="月收入金额，必须大于0")
     target_city: str = Field(..., min_length=1, max_length=50, description="目标迁移城市")
+
+    @model_validator(mode="after")
+    def validate_different_cities(self):
+        if self.current_city == self.target_city:
+            raise ValueError("当前城市和目标城市不能相同")
+        return self
 
 class DriftResponse(BaseModel):
     """财富漂流响应"""
@@ -99,9 +125,11 @@ app = FastAPI(
 async def health_check():
     """健康检查接口"""
     try:
-        # 测试 Supabase 连接
-        result = supabase.table("macro_economics").select("year").limit(1).execute()
         db_status = "connected"
+        if supabase:
+            supabase.table("macro_economics").select("year").limit(1).execute()
+        elif not calculator.get_macro_data(2024):
+            db_status = "error: fallback data unavailable"
     except Exception as e:
         db_status = f"error: {str(e)}"
     
@@ -216,6 +244,8 @@ async def convert_purchasing_power(request: ConvertRequest):
         
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"转换失败: {str(e)}")
 
@@ -229,6 +259,12 @@ def get_city_data(city_name: str) -> Optional[dict]:
     Returns:
         城市数据字典，不存在返回None
     """
+    if city_name in FALLBACK_CITY_DATA:
+        return FALLBACK_CITY_DATA[city_name]
+
+    if not supabase:
+        return None
+
     try:
         result = supabase.table("city_data").select("*").eq("city_name", city_name).execute()
         if result.data:
@@ -347,12 +383,6 @@ async def calculate_drift(request: DriftRequest):
         财富漂流结果
     """
     try:
-        if request.current_city == request.target_city:
-            raise HTTPException(
-                status_code=422,
-                detail="当前城市和目标城市不能相同"
-            )
-
         current_city_data = get_city_data(request.current_city)
         if not current_city_data:
             raise HTTPException(
@@ -370,6 +400,12 @@ async def calculate_drift(request: DriftRequest):
         current_city_coli = current_city_data.get("coli_index", 0)
         target_city_coli = target_city_data.get("coli_index", 0)
         target_city_median_income = target_city_data.get("median_income", 0)
+
+        if target_city_coli <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"城市 {request.target_city} 的 COLI 数据无效"
+            )
 
         equivalent_amount = round(request.monthly_income * (current_city_coli / target_city_coli), 2)
 

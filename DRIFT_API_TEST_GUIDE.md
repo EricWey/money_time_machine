@@ -29,7 +29,7 @@ Content-Type: application/json
 ### 1. 使用curl命令测试
 
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "上海",
@@ -44,7 +44,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 1. 打开Postman
 2. 点击"New"创建新请求
 3. 选择"POST"方法
-4. 输入URL：`http://127.0.0.1:8003/api/v1/drift`
+4. 输入URL：`http://127.0.0.1:8000/api/v1/drift`
 
 #### 步骤2：设置请求头
 1. 点击"Headers"标签
@@ -135,7 +135,7 @@ Wealth_Ratio = equivalent_amount / target_city_median_income
 
 ### 测试用例1：上海高薪迁移到开封（县城土豪）
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "上海",
@@ -151,7 +151,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 
 ### 测试用例2：北京高薪迁移到鹤岗（县城土豪）
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "北京",
@@ -167,7 +167,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 
 ### 测试用例3：上海中等收入迁移到郑州（体面名流）
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "上海",
@@ -182,7 +182,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 
 ### 测试用例4：相同城市错误
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "上海",
@@ -192,12 +192,12 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 ```
 
 **预期结果**：
-- HTTP状态码: 400
-- 错误信息: "当前城市和目标城市不能相同"
+- HTTP状态码: 422
+- 错误信息: 包含"当前城市和目标城市不能相同"
 
 ### 测试用例5：城市数据不存在错误
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "长沙",
@@ -212,7 +212,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 
 ### 测试用例6：月收入为负数错误
 ```bash
-curl -X POST http://127.0.0.1:8003/api/v1/drift \
+curl -X POST http://127.0.0.1:8000/api/v1/drift \
   -H "Content-Type: application/json" \
   -d '{
     "current_city": "上海",
@@ -267,7 +267,7 @@ curl -X POST http://127.0.0.1:8003/api/v1/drift \
 
 ## 验证步骤
 
-1. **启动服务**：确保FastAPI服务正常运行在 http://127.0.0.1:8003
+1. **启动服务**：确保FastAPI服务正常运行在 http://127.0.0.1:8000
 2. **健康检查**：访问 `/health` 接口确认服务状态
 3. **数据验证**：确保城市数据已通过 `seed_city_data.py` 脚本注入
 4. **接口测试**：使用上述测试用例验证接口功能

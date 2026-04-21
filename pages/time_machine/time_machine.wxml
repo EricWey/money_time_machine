@@ -1,0 +1,130 @@
+<view class="time-page">
+  <view class="hero">
+    <view class="hero-ornament hero-ornament-left"></view>
+    <view class="hero-ornament hero-ornament-right"></view>
+    <text class="hero-badge">TIME CONVERSION</text>
+    <text class="hero-title">钱值时光机</text>
+    <text class="hero-subtitle">把一笔旧钞票，翻译成今天的生活分量</text>
+  </view>
+
+  <view class="converter-card">
+    <view class="card-stamp">复古换算</view>
+    <text class="mode-tag">{{modeLabel}}</text>
+
+    <view class="mode-switch">
+      <view
+        class="mode-option {{debugMode === 'api' ? 'active' : ''}}"
+        data-mode="api"
+        bindtap="switchMode"
+      >
+        <text class="mode-option-title">真实接口</text>
+        <text class="mode-option-sub">走 FastAPI + Supabase</text>
+      </view>
+      <view
+        class="mode-option {{debugMode === 'local' ? 'active' : ''}}"
+        data-mode="local"
+        bindtap="switchMode"
+      >
+        <text class="mode-option-title">本地演示</text>
+        <text class="mode-option-sub">纯前端数据，便于调试</text>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <text class="field-label">金额</text>
+      <view class="money-input">
+        <text class="currency-symbol">¥</text>
+        <input
+          class="money-field"
+          type="digit"
+          placeholder="输入你记忆里的那笔钱"
+          placeholder-class="field-placeholder"
+          bindinput="bindAmountInput"
+          value="{{amount}}"
+        />
+      </view>
+    </view>
+
+    <view class="field-grid">
+      <view class="field-group compact">
+        <text class="field-label">年份</text>
+        <picker mode="selector" range="{{yearOptions}}" value="{{yearIndex}}" bindchange="bindYearChange">
+          <view class="selector">
+            <text class="selector-value">{{selectedYear}} 年</text>
+            <text class="selector-arrow">▾</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="field-group compact">
+        <text class="field-label">城市</text>
+        <picker mode="selector" range="{{cityOptions}}" value="{{cityIndex}}" bindchange="bindCityChange">
+          <view class="selector">
+            <text class="selector-value">{{selectedCity}}</text>
+            <text class="selector-arrow">▾</text>
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <button class="convert-button" bindtap="convert">
+      <text class="button-main">拨动时光刻度</text>
+      <text class="button-sub">{{debugMode === 'api' ? '0.5 秒后请求真实接口' : '0.5 秒后生成本地演示结果'}}</text>
+    </button>
+
+    <view wx:if="{{error}}" class="inline-error">{{error}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading-overlay">
+    <view class="loading-screen">
+      <view class="tv-frame">
+        <view class="noise-layer"></view>
+        <view class="scan-line"></view>
+        <text class="loading-year">{{selectedYear}}</text>
+      </view>
+      <text class="loading-text">{{loadingText}}</text>
+      <text class="loading-tip">胶片倒带中，请稍候片刻</text>
+    </view>
+  </view>
+
+  <view wx:if="{{result}}" class="result-section">
+    <view class="result-panel">
+      <text class="section-kicker">转换结果</text>
+      <text class="result-title">{{result.sourceAmount}} 元</text>
+      <text class="result-arrow">≈</text>
+      <text class="result-value">{{result.equivalentAmount}} 元</text>
+      <text class="result-meta">{{result.year}} 年的 {{result.sourceAmount}} 元，在 {{result.city}} 大约相当于今天多出 {{result.deltaAmount}} 元的体感。</text>
+    </view>
+
+    <view class="matrix-section">
+      <view class="matrix-header">
+        <text class="section-kicker">实物矩阵</text>
+        <text class="matrix-subtitle">用 3 件日常物件，看见价格年代感</text>
+      </view>
+
+      <view class="matrix-grid">
+        <view class="matrix-card" wx:for="{{result.items}}" wx:key="title">
+          <view class="matrix-image-frame">
+            <image class="matrix-image" src="{{item.image}}" mode="aspectFit" />
+          </view>
+          <text class="matrix-title">{{item.title}}</text>
+          <text class="matrix-price">{{result.year}} 年：{{item.priceThen}} {{item.unit}}</text>
+          <text class="matrix-price current">2024 年：{{item.priceNow}} {{item.unit}}</text>
+          <text class="matrix-comparison">{{item.comparison}}</text>
+          <text class="matrix-note">{{item.note}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="newspaper-section">
+      <view class="paper-fold"></view>
+      <text class="newspaper-label">旧报剪影</text>
+      <text class="newspaper-title">AI 怀旧感言</text>
+      <text class="newspaper-body">{{result.aiComment}}</text>
+      <view class="newspaper-footer">
+        <text class="newspaper-date">{{result.year}} / {{result.city}}</text>
+        <text class="newspaper-stamp">时光局存档</text>
+      </view>
+    </view>
+  </view>
+</view>

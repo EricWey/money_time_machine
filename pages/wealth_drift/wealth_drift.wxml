@@ -1,0 +1,309 @@
+<view class="drift-page">
+  <view class="hero">
+    <view class="hero-ornament hero-ornament-left"></view>
+    <view class="hero-ornament hero-ornament-right"></view>
+    <text class="hero-badge">WEALTH DRIFT</text>
+    <text class="hero-title">财富漂流</text>
+    <text class="hero-subtitle">{{heroHint}}</text>
+  </view>
+
+  <view class="page-shell {{pageStage === 'result' ? 'show-result' : ''}}">
+    <view class="form-stage">
+      <view class="stage-card">
+        <view class="card-stamp">漂流申请表</view>
+        <view class="stage-header">
+          <text class="stage-kicker">主交互页</text>
+          <text class="stage-title">把现在的工资，漂到另一座城</text>
+          <text class="stage-copy">左边填你的出发点和收入，右边选你想登陆的城市。</text>
+        </view>
+
+        <view class="dual-panel">
+          <view class="city-panel city-panel-current">
+            <text class="panel-title">当前城市</text>
+            <text class="panel-caption">你现在正在承受的物价现实</text>
+
+            <view class="search-box">
+              <input
+                class="search-input"
+                data-role="current"
+                placeholder="搜索当前城市"
+                placeholder-class="field-placeholder"
+                bindfocus="focusCitySearch"
+                bindinput="bindCitySearch"
+                value="{{currentCitySearch}}"
+              />
+            </view>
+
+            <view wx:if="{{activePicker === 'current'}}" class="picker-sheet">
+              <view class="picker-head">
+                <text class="picker-title">选择当前城市</text>
+                <text class="picker-close" bindtap="closePicker">收起</text>
+              </view>
+              <scroll-view scroll-y class="picker-list">
+                <view
+                  class="picker-item {{item.name === currentCity ? 'selected' : ''}}"
+                  wx:for="{{filteredCurrentCities}}"
+                  wx:key="name"
+                  data-role="current"
+                  data-city="{{item.name}}"
+                  bindtap="selectCity"
+                >
+                  <text class="picker-city">{{item.name}}</text>
+                  <text class="picker-meta">COLI {{item.coli}} / 中位月收入 {{item.medianIncome}}</text>
+                </view>
+                <view wx:if="{{!filteredCurrentCities.length}}" class="picker-empty">没搜到这座城，先从现有样本里挑一个。</view>
+              </scroll-view>
+            </view>
+
+            <view class="income-card">
+              <text class="panel-title">月收入</text>
+              <text class="panel-caption">支持数字键盘，也给你留了几个快捷档位</text>
+
+              <view class="money-input">
+                <text class="currency-symbol">¥</text>
+                <input
+                  class="money-field"
+                  type="digit"
+                  placeholder="输入你每月到手的底气"
+                  placeholder-class="field-placeholder"
+                  bindinput="bindIncomeInput"
+                  value="{{monthlyIncome}}"
+                />
+              </view>
+
+              <view class="preset-grid">
+                <view
+                  class="preset-pill {{monthlyIncome === item.value ? 'active' : ''}}"
+                  wx:for="{{incomePresets}}"
+                  wx:key="value"
+                  data-value="{{item.value}}"
+                  bindtap="chooseIncomePreset"
+                >
+                  {{item.label}}
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view class="city-panel city-panel-target">
+            <text class="panel-title">目标城市</text>
+            <text class="panel-caption">看看同一份工资，漂过去还能不能体面</text>
+
+            <view class="search-box">
+              <input
+                class="search-input"
+                data-role="target"
+                placeholder="搜索目标城市"
+                placeholder-class="field-placeholder"
+                bindfocus="focusCitySearch"
+                bindinput="bindCitySearch"
+                value="{{targetCitySearch}}"
+              />
+            </view>
+
+            <view wx:if="{{activePicker === 'target'}}" class="picker-sheet">
+              <view class="picker-head">
+                <text class="picker-title">选择目标城市</text>
+                <text class="picker-close" bindtap="closePicker">收起</text>
+              </view>
+              <scroll-view scroll-y class="picker-list">
+                <view
+                  class="picker-item {{item.name === targetCity ? 'selected' : ''}}"
+                  wx:for="{{filteredTargetCities}}"
+                  wx:key="name"
+                  data-role="target"
+                  data-city="{{item.name}}"
+                  bindtap="selectCity"
+                >
+                  <text class="picker-city">{{item.name}}</text>
+                  <text class="picker-meta">COLI {{item.coli}} / 中位月收入 {{item.medianIncome}}</text>
+                </view>
+                <view wx:if="{{!filteredTargetCities.length}}" class="picker-empty">没有精确匹配，先选个方向最接近的。</view>
+              </scroll-view>
+            </view>
+
+            <view class="route-card">
+              <text class="route-label">当前航线</text>
+              <text class="route-value">{{currentCity}} → {{targetCity}}</text>
+              <text class="route-copy">如果这趟漂流成真，算法会先对比生活成本，再给你一枚有点扎心的身份章。</text>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{error}}" class="inline-error">
+          <text class="inline-error-text">{{error}}</text>
+          <button
+            wx:if="{{driftError && driftError.recoverable}}"
+            class="mini-retry-button"
+            bindtap="retryLastRequest"
+          >
+            再试一次
+          </button>
+        </view>
+
+        <button class="drift-button" bindtap="startDrift">
+          <text class="button-main">开始漂流</text>
+          <text class="button-sub">生成身份章 + 购买力对比</text>
+        </button>
+      </view>
+    </view>
+
+    <view class="result-stage">
+      <view wx:if="{{result}}" class="result-card">
+        <view class="result-topline">
+          <text class="stage-kicker">结果页</text>
+          <text class="result-route">{{result.currentCity.name}} → {{result.targetCity.name}}</text>
+        </view>
+
+        <view class="stamp-wrap {{stampVisible ? 'stamp-show' : ''}}">
+          <view class="stamp-shadow"></view>
+          <view class="identity-stamp">
+            <text class="stamp-ring">PURCHASE POWER</text>
+            <text class="stamp-label">{{result.identityLabel}}</text>
+            <text class="stamp-copy">等效月薪 {{result.equivalentAmount}}</text>
+          </view>
+        </view>
+
+        <view class="summary-grid">
+          <view class="summary-tile">
+            <text class="tile-label">在目标城市的等效月薪</text>
+            <text class="tile-value">¥{{result.equivalentAmount}}</text>
+          </view>
+          <view class="summary-tile">
+            <text class="tile-label">对比当地中位收入</text>
+            <text class="tile-value">{{result.wealthRatio}}x</text>
+          </view>
+          <view class="summary-tile">
+            <text class="tile-label">核心开销合计</text>
+            <text class="tile-value">¥{{result.totalTargetCost}}</text>
+          </view>
+          <view class="summary-tile">
+            <text class="tile-label">月底状态</text>
+            <text class="tile-value tile-mood">{{result.moodTag}}</text>
+          </view>
+        </view>
+
+        <view class="result-copy-card">
+          <text class="copy-title">漂流结论</text>
+          <text class="copy-body">{{result.summary}}</text>
+          <text class="copy-extra">{{result.roastLine}}</text>
+          <text class="copy-foot">{{result.insight}}</text>
+        </view>
+
+        <view class="comparison-card">
+          <view class="comparison-head">
+            <text class="copy-title">购买力对比</text>
+            <text class="comparison-sub">住房、餐饮、交通、娱乐四项一起看，扎心会更完整。</text>
+          </view>
+
+          <view class="comparison-list">
+            <view class="comparison-item" wx:for="{{result.costComparison}}" wx:key="key">
+              <view class="metric-head">
+                <view class="metric-tag">{{item.icon}}</view>
+                <view class="metric-meta">
+                  <text class="metric-title">{{item.label}}</text>
+                  <text class="metric-ratio">{{item.ratioText}}</text>
+                </view>
+              </view>
+
+              <view class="metric-columns">
+                <view class="metric-column">
+                  <text class="metric-city">{{result.currentCity.name}}</text>
+                  <view class="metric-bar-shell current">
+                    <view class="metric-bar current" style="width: {{item.currentWidth}};"></view>
+                  </view>
+                  <text class="metric-value">¥{{item.currentValue}} / {{item.unit}}</text>
+                </view>
+
+                <view class="metric-column">
+                  <text class="metric-city">{{result.targetCity.name}}</text>
+                  <view class="metric-bar-shell target">
+                    <view class="metric-bar target" style="width: {{item.targetWidth}};"></view>
+                  </view>
+                  <text class="metric-value">¥{{item.targetValue}} / {{item.unit}}</text>
+                </view>
+              </view>
+
+              <text class="metric-roast">{{item.roast}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="bottom-note">
+          <text class="note-main">{{result.targetCity.name}} 当地中位月收入约 ¥{{result.targetMedianIncome}}</text>
+          <text class="note-sub">这只是核心生活成本模拟，不含冲动消费、恋爱成本和突然很想辞职的代价。</text>
+        </view>
+
+        <view class="expert-card">
+          <view class="expert-head">
+            <text class="copy-title">专家点评</text>
+            <text class="expert-sub">由 `/api/v1/convert` 返回的 AI 点评补充这次漂流的情绪注脚。</text>
+          </view>
+
+          <view wx:if="{{loadingComment}}" class="comment-loading">
+            <view class="comment-shimmer shimmer-line long"></view>
+            <view class="comment-shimmer shimmer-line"></view>
+            <view class="comment-shimmer shimmer-line short"></view>
+          </view>
+
+          <view wx:elif="{{commentError}}" class="comment-error">
+            <text class="comment-error-text">{{commentError.message}}</text>
+            <button
+              wx:if="{{commentError.recoverable}}"
+              class="mini-retry-button"
+              bindtap="retryLastRequest"
+            >
+              重新获取点评
+            </button>
+          </view>
+
+          <text wx:else class="expert-comment">{{expertComment}}</text>
+        </view>
+
+        <button class="share-poster-button" bindtap="generatePoster" loading="{{posterGenerating}}">
+          <text class="button-main">分享我的财富人生</text>
+          <text class="button-sub share-sub">生成 80 年代喜报海报</text>
+        </button>
+
+        <button class="ghost-button" bindtap="resetForm">重新漂流</button>
+      </view>
+    </view>
+  </view>
+
+  <canvas
+    canvas-id="posterCanvas"
+    class="poster-canvas"
+    style="width: 960px; height: 1706px;"
+  ></canvas>
+
+  <view wx:if="{{posterVisible}}" class="poster-panel-mask" bindtap="closePosterPanel">
+    <view class="poster-panel" catchtap="noop">
+      <view class="poster-panel-head">
+        <text class="poster-panel-title">财富人生喜报</text>
+        <text class="picker-close" bindtap="closePosterPanel">关闭</text>
+      </view>
+
+      <view wx:if="{{posterError}}" class="poster-error-card">
+        <text class="comment-error-text">{{posterError}}</text>
+        <button class="mini-retry-button" bindtap="generatePoster">重新生成</button>
+      </view>
+
+      <block wx:else>
+        <image class="poster-preview" src="{{posterTempFilePath}}" mode="widthFix" />
+        <text wx:if="{{shareHint}}" class="poster-share-hint">{{shareHint}}</text>
+        <view class="poster-actions">
+          <button class="poster-action primary" bindtap="savePosterToAlbum">保存到相册</button>
+          <button class="poster-action" bindtap="sharePosterImage">直接分享</button>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <view wx:if="{{transitioning}}" class="loading-overlay">
+    <view class="loading-card">
+      <view class="loading-orbit"></view>
+      <text class="loading-text">{{loadingText}}</text>
+      <text class="loading-sub">正在为你寻找更扎心但更诚实的生活版本</text>
+    </view>
+  </view>
+</view>

@@ -7,14 +7,20 @@
 
 import logging
 from typing import Optional, Dict, Any
-from supabase import Client
+
+try:
+    from supabase import Client
+except ImportError:  # pragma: no cover
+    Client = Any
+
+from services.fallback_data import FALLBACK_CITY_PRICES, FALLBACK_MACRO_DATA
 
 logger = logging.getLogger(__name__)
 
 class Calculator:
     """货币购买力计算器"""
     
-    def __init__(self, supabase: Client):
+    def __init__(self, supabase: Optional[Client]):
         """初始化计算器"""
         self.supabase = supabase
     
@@ -28,6 +34,9 @@ class Calculator:
         Returns:
             包含宏观经济数据的字典，如果查询失败返回None
         """
+        if not self.supabase:
+            return FALLBACK_MACRO_DATA.get(year)
+
         try:
             result = self.supabase.table("macro_economics").select("*").eq("year", year).execute()
             if result.data:
@@ -94,6 +103,20 @@ class Calculator:
             M2调整值比率
         """
         try:
+            if not self.supabase:
+                yearly_data = [
+                    FALLBACK_MACRO_DATA[year]
+                    for year in sorted(FALLBACK_MACRO_DATA)
+                    if source_year <= year <= target_year
+                ]
+                if not yearly_data:
+                    return 1.0
+
+                m2_adj_ratio = 1.0
+                for data in yearly_data:
+                    m2_adj_ratio *= (1 + data["m2_adj"] / 100)
+                return round(m2_adj_ratio, 6)
+
             # 获取起始年到目标年之间的所有数据
             result = self.supabase.table("macro_economics").select("year", "m2_adj").gte("year", source_year).lte("year", target_year).execute()
             
@@ -103,7 +126,7 @@ class Calculator:
             
             # 计算累乘积
             m2_adj_ratio = 1.0
-            for data in result.data:
+            for data in sorted(result.data, key=lambda item: item["year"]):
                 m2_adj_ratio *= (1 + data["m2_adj"] / 100)
             
             return round(m2_adj_ratio, 6)
@@ -123,16 +146,32 @@ class Calculator:
         Returns:
             实物价格数据列表，查询失败返回None
         """
+        if not self.supabase:
+            return FALLBACK_CITY_PRICES.get(city, {}).get(year)
+
         try:
             result = self.supabase.table("city_prices").select("*").eq("city_name", city).eq("year", year).execute()
             if result.data:
                 return result.data
-            else:
-                logger.warning(f"未找到 {city} {year} 年的实物价格数据")
-                return None
+        except Exception as e:
+            logger.warning(f"按 city_name 查询 {city} {year} 年实物价格失败，尝试使用 city_id 查询: {str(e)}")
+
+        try:
+            city_data = self.supabase.table("city_data").select("city_id").eq("city_name", city).limit(1).execute()
+            if city_data.data:
+                city_id = city_data.data[0]["city_id"]
+                result = self.supabase.table("city_prices").select("*").eq("city_id", city_id).eq("year", year).execute()
+                if result.data:
+                    return result.data
         except Exception as e:
             logger.error(f"获取 {city} {year} 年实物价格数据时出错: {str(e)}")
-            return None
+
+        fallback_prices = FALLBACK_CITY_PRICES.get(city, {}).get(year)
+        if fallback_prices:
+            return fallback_prices
+
+        logger.warning(f"未找到 {city} {year} 年的实物价格数据")
+        return None
     
     def calculate_purchasing_power_comparison(self, items: list, source_year: int, target_year: int = 2024) -> list:
         """
@@ -153,7 +192,7 @@ class Calculator:
                 price_then = item.get("price_then", 0)
                 price_now = item.get("price_now", 0)
                 
-                if price_now > 0:
+                if price_then > 0 and price_now > 0:
                     change_percent = ((price_now - price_then) / price_then) * 100
                     
                     if change_percent > 0:

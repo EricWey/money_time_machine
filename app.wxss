@@ -1,0 +1,118 @@
+/* 全局样式 */
+page {
+  background-color: #FDF5E6; /* 怀旧宣纸色 */
+  font-size: 16px; /* 偏大字体，照顾50+用户 */
+  color: #333333;
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+/* 全局容器 */
+.container {
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+/* 标题样式 */
+.page-title {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  color: #8B4513;
+  margin-bottom: 20rpx;
+}
+
+.page-subtitle {
+  display: block;
+  font-size: 14px;
+  color: #666666;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 20px;
+  font-weight: bold;
+  color: #8B4513;
+  margin-bottom: 16rpx;
+}
+
+/* 输入框样式 */
+input {
+  border: 2rpx solid #D2B48C;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 16px;
+  background-color: #FFFFFF;
+  margin-bottom: 16rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 按钮样式 */
+button {
+  background-color: #8B4513;
+  color: #FFFFFF;
+  border-radius: 8rpx;
+  font-size: 16px;
+  padding: 16rpx;
+  width: 100%;
+  margin-top: 20rpx;
+}
+
+button:hover {
+  background-color: #A0522D;
+}
+
+/* 结果展示区域 */
+.result {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  background-color: #FFFFFF;
+  border-radius: 8rpx;
+  border: 2rpx solid #D2B48C;
+}
+
+/* 卡片样式 */
+.card {
+  background-color: #FFFFFF;
+  border-radius: 8rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 标签样式 */
+.tag {
+  display: inline-block;
+  padding: 4rpx 12rpx;
+  background-color: #D2B48C;
+  color: #8B4513;
+  border-radius: 16rpx;
+  font-size: 14px;
+  margin-right: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 加载动画 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40rpx;
+}
+
+/* 错误提示 */
+.error {
+  color: #FF6347;
+  font-size: 14px;
+  margin-top: 10rpx;
+  text-align: center;
+}
+
+/* 成功提示 */
+.success {
+  color: #32CD32;
+  font-size: 14px;
+  margin-top: 10rpx;
+  text-align: center;
+}
