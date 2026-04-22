@@ -149,6 +149,105 @@ async def root():
         "docs": "/docs"
     }
 
+@app.get("/api/v1/macro")
+async def get_macro_data(
+    year: Optional[int] = None,
+    start_year: Optional[int] = None,
+    end_year: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+    sort: str = "year",
+    order: str = "asc"
+):
+    """
+    获取宏观经济数据
+
+    Args:
+        year: 特定年份
+        start_year: 起始年份
+        end_year: 结束年份
+        limit: 返回数据条数限制
+        offset: 数据偏移量
+        sort: 排序字段
+        order: 排序方向
+
+    Returns:
+        宏观经济数据列表
+    """
+    try:
+        if supabase:
+            try:
+                # 构建查询
+                query = supabase.table("macro_economics").select("*")
+                
+                # 应用筛选条件
+                if year:
+                    query = query.eq("year", year)
+                elif start_year and end_year:
+                    query = query.gte("year", start_year).lte("year", end_year)
+                elif start_year:
+                    query = query.gte("year", start_year)
+                elif end_year:
+                    query = query.lte("year", end_year)
+                
+                # 应用排序
+                if order.lower() == "desc":
+                    query = query.order(sort, ascending=False)
+                else:
+                    query = query.order(sort, ascending=True)
+                
+                # 应用分页
+                query = query.limit(limit).offset(offset)
+                
+                # 执行查询
+                result = query.execute()
+                
+                if result.data:
+                    # 格式化数据
+                    formatted_data = []
+                    for item in result.data:
+                        formatted_data.append({
+                            "year": item.get("year"),
+                            "cpi_index": item.get("cpi_index"),
+                            "m2_adj": item.get("m2_adj"),
+                            "property_index_nat": item.get("property_index_nat")
+                        })
+                    logger.info(f"从 Supabase 成功获取 {len(formatted_data)} 条宏观经济数据")
+                    return formatted_data
+                else:
+                    logger.warning("Supabase 中未找到宏观经济数据，返回兜底数据")
+            except Exception as e:
+                logger.error(f"从 Supabase 获取宏观经济数据时出错: {str(e)}")
+        else:
+            logger.warning("Supabase 未初始化，返回兜底数据")
+        
+        # 兜底数据处理（可以根据参数进行过滤）
+        fallback_data = [
+            # 兜底数据...
+        ]
+        
+        # 应用筛选条件到兜底数据
+        if year:
+            fallback_data = [item for item in fallback_data if item["year"] == year]
+        elif start_year and end_year:
+            fallback_data = [item for item in fallback_data if start_year <= item["year"] <= end_year]
+        elif start_year:
+            fallback_data = [item for item in fallback_data if item["year"] >= start_year]
+        elif end_year:
+            fallback_data = [item for item in fallback_data if item["year"] <= end_year]
+        
+        # 应用排序
+        fallback_data.sort(key=lambda x: x[sort], reverse=order.lower() == "desc")
+        
+        # 应用分页
+        fallback_data = fallback_data[offset:offset+limit]
+        
+        logger.info(f"返回 {len(fallback_data)} 条兜底宏观经济数据")
+        return fallback_data
+    except Exception as e:
+        logger.error(f"获取宏观经济数据失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"获取宏观经济数据失败: {str(e)}")
+
 @app.post("/api/v1/convert", response_model=ConvertResponse)
 async def convert_purchasing_power(request: ConvertRequest):
     """

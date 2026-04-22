@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8003'
+const API_BASE_URL = 'http://127.0.0.1:8000'
 
 const YEAR_OPTIONS = Array.from({ length: 46 }, (_, index) => String(2025 - index))
 

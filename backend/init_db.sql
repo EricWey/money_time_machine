@@ -17,6 +17,9 @@ CREATE TABLE city_data (
     coli_index DECIMAL(18, 2) NOT NULL,         -- 生活成本指数 (上海=100)
     median_income DECIMAL(18, 2),               -- 该城市人均可支配收入中位数 (最新)
     region_level INT DEFAULT 2,                 -- 1: 一线/省会, 2: 地级市
+    housing_index numeric null,
+    food_index numeric null,
+    service_index numeric null,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
