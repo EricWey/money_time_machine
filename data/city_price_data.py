@@ -94,6 +94,8 @@ class PriceDataSeeder:
         # 加载各省 CPI 数据 (要求格式: year, city_name, cpi_value)
         # cpi_value 应该是同比指数，如 105.2 代表上涨 5.2%
         cpi_df = pd.read_csv(cpi_file)
+        # 处理CPI数据中的空值，设置为100
+        cpi_df['cpi_value'] = pd.to_numeric(cpi_df['cpi_value'], errors='coerce').fillna(100)
         
         final_results = []
         record_id = 1  # 自增长ID
@@ -115,15 +117,13 @@ class PriceDataSeeder:
                     t_cpi = cpi_df[(cpi_df['year'] == year) & (cpi_df['city_name'] == city_name)]['cpi_value'].values[0]
                     a_cpi = cpi_df[(cpi_df['year'] == year) & (cpi_df['city_name'] == anchor_city)]['cpi_value'].values[0]
                     cpi_adj = t_cpi / a_cpi
-                    
-
                 except:
                     cpi_adj = 1.0 # 缺失则默认同步
                   
                 
                 # 获取该年份所有商品
                 year_items = anchor_data[anchor_data['year'] == year]
-                
+               
                 for _, row in year_items.iterrows():
                     item = row['item_name']
                     cat = row['category']
@@ -131,7 +131,7 @@ class PriceDataSeeder:
                     # 2. 应用分类 Scale Factor
                     if cat == 'income' or cat == 'service':
                         scale = cfg['s_inc']
-                    elif item in ["500ml 瓶装五粮液", "330ml 罐装国产经典啤酒"]:
+                    elif item in ["500ml五粮液", "330ml罐装啤酒"]:
                         scale = 1.0 # 工业品和名酒全国趋同
                     else:
                         scale = cfg['s_food']
@@ -140,7 +140,7 @@ class PriceDataSeeder:
                     # 加入微小随机扰动 (±2%) 增加数据真实感
                     noise = np.random.uniform(0.98, 1.02)
                     final_p = round(base_p * scale * cpi_adj * noise, 2)
-                    
+    
                     # 添加自增长ID
                     final_results.append([
                         record_id, city_id, city_name, year, cat, item, 
@@ -160,45 +160,47 @@ class PriceDataSeeder:
         """执行价格数据注入"""
         logger.info("开始价格数据注入...")
 
-        # # 清空数据表，防止重复插入
-        # try:
-        #     logger.info("清空city_prices表...")
-        #     delete_result = self.supabase.table("city_prices").delete().execute()
-        #     logger.info("表清空成功")
-        # except Exception as e:
-        #     logger.error(f"清空表时出错: {str(e)}")
+        # 清空数据表，防止重复插入
+        try:
+            logger.info("清空city_prices表...")
+            # 使用neq('id', '')来匹配所有记录，因为Supabase要求DELETE必须有WHERE子句
+            delete_result = self.supabase.table("city_prices").delete().gte('year', 1980).execute()
+            logger.info("表清空成功")
+        except Exception as e:
+            logger.error(f"清空表时出错: {str(e)}")
 
         self.stats["total_records"] = len(price_data_df)
 
-        # 转换DataFrame为字典列表
+        # 转换DataFrame为字典列表并处理nan值
         price_records = price_data_df.to_dict('records')
-
+        processed_records = []
+        
         for record in price_records:
             try:
+                # 处理nan值，替换为None
                 for key, value in record.items():
                     if pd.isna(value):
                         record[key] = None
-            except Exception as e:
-                self.stats["errors"] += 1
-                logger.error(f"处理NAN值时出错: {str(e)}")
-            try:
-                # 检查记录是否已存在（根据city_id, year, item_name）
-                result = self.supabase.table("city_prices").select("id").eq("city_id", record["city_id"]).eq("year", record["year"]).eq("item_name", record["item_name"]).execute()
-                
-                if len(result.data) > 0:
-                    # 更新现有记录
-                    update_result = self.supabase.table("city_prices").update(record).eq("id", result.data[0]["id"]).execute()
-                    if update_result.data:
-                        self.stats["updated_records"] += 1
-                else:
-                    # 插入新记录
-                    insert_result = self.supabase.table("city_prices").insert(record).execute()
-                    if insert_result.data:
-                        self.stats["new_records"] += 1
-
+                processed_records.append(record)
             except Exception as e:
                 self.stats["errors"] += 1
                 logger.error(f"处理记录时出错: {str(e)}")
+        
+        # 批量插入数据，每批100条
+        batch_size = 100
+        total_batches = (len(processed_records) + batch_size - 1) // batch_size
+        
+        for i in range(0, len(processed_records), batch_size):
+            batch = processed_records[i:i+batch_size]
+            try:
+                # 批量插入
+                insert_result = self.supabase.table("city_prices").insert(batch).execute()
+                if insert_result.data:
+                    self.stats["new_records"] += len(insert_result.data)
+                logger.info(f"批量插入第 {i//batch_size + 1}/{total_batches} 批，成功插入 {len(insert_result.data)} 条记录")
+            except Exception as e:
+                self.stats["errors"] += len(batch)
+                logger.error(f"批量插入时出错: {str(e)}")
 
         logger.info(f"价格数据注入完成")
 
