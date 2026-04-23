@@ -48,14 +48,14 @@ class Calculator:
             logger.error(f"获取 {year} 年宏观经济数据时出错: {str(e)}")
             return None
     
-    def calculate_equivalent_value(self, amount: float, source_year: int, target_year: int = 2024) -> Optional[float]:
+    def calculate_equivalent_value(self, amount: float, source_year: int, target_year: int = 2025) -> Optional[float]:
         """
         计算货币购买力等价值
         
         Args:
             amount: 原始金额
             source_year: 起始年份
-            target_year: 目标年份，默认为2024年
+            target_year: 目标年份，默认为2025年
             
         Returns:
             等价值，计算失败返回None
