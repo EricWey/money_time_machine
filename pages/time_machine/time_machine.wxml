@@ -69,7 +69,7 @@
 
     <button class="convert-button" bindtap="convert">
       <text class="button-main">拨动时光刻度</text>
-      <text class="button-sub">{{debugMode === 'api' ? '0.5 秒后请求真实接口' : '0.5 秒后生成本地演示结果'}}</text>
+      <text class="button-sub">{{buttonSubtext}}</text>
     </button>
 
     <view wx:if="{{error}}" class="inline-error">{{error}}</view>
@@ -109,7 +109,7 @@
           </view>
           <text class="matrix-title">{{item.title}}</text>
           <text class="matrix-price">{{result.year}} 年：{{item.priceThen}} {{item.unit}}</text>
-          <text class="matrix-price current">2024 年：{{item.priceNow}} {{item.unit}}</text>
+          <text class="matrix-price current">2026 年：{{item.priceNow}} {{item.unit}}</text>
           <text class="matrix-comparison">{{item.comparison}}</text>
           <text class="matrix-note">{{item.note}}</text>
         </view>
