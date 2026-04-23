@@ -79,6 +79,9 @@ class ConvertRequest(BaseModel):
 class Item(BaseModel):
     """商品信息"""
     name: str
+    unit: Optional[str] = None
+    category: Optional[str] = None
+    note: Optional[str] = None
     price_then: float
     price_now: float
     purchasing_power: str
@@ -273,39 +276,40 @@ async def convert_purchasing_power(request: ConvertRequest):
                 detail="无法计算货币购买力等价值，请检查数据是否完整"
             )
         
-        # 获取实物价格数据
-        city_prices = calculator.get_city_prices(request.city, request.source_year)
-        
-        # 构建商品对比列表
-        items = []
-        
-        if city_prices and len(city_prices) >= 3:
-            # 使用数据库中的数据
-            for price_data in city_prices[:3]:  # 限制为3个商品
-                # 获取当前年份的价格
-                current_prices = calculator.get_city_prices(request.city, 2024)
-                current_price = None
-                
-                if current_prices:
-                    for current in current_prices:
-                        if current.get("item_name") == price_data.get("item_name"):
-                            current_price = current.get("price")
-                            break
-                
-                if current_price:
-                    items.append({
-                        "name": price_data.get("item_name", "未知商品"),
-                        "price_then": price_data.get("price", 0),
-                        "price_now": current_price,
-                        "purchasing_power": ""
-                    })
+        items = calculator.build_random_item_comparison_set(
+            request.city,
+            request.source_year,
+            2024,
+            sample_size=3
+        )
         
         # 如果数据不足，使用默认商品数据
         if len(items) < 3:
             default_items = [
-                {"name": "猪肉", "price_then": 2.5, "price_now": 25.0},
-                {"name": "大米", "price_then": 0.8, "price_now": 6.0},
-                {"name": "鸡蛋", "price_then": 1.2, "price_now": 12.0}
+                {
+                    "name": "梗米",
+                    "unit": "元/斤",
+                    "category": "food",
+                    "note": "家庭主食的基础款，一斤米价最能照见日常饭桌的分量。",
+                    "price_then": 0.8,
+                    "price_now": 6.2
+                },
+                {
+                    "name": "精瘦肉",
+                    "unit": "元/斤",
+                    "category": "food",
+                    "note": "家常荤菜的代表，一斤肉价最容易让人感到餐桌成本的变化。",
+                    "price_then": 2.5,
+                    "price_now": 25.0
+                },
+                {
+                    "name": "理发",
+                    "unit": "元/次",
+                    "category": "service",
+                    "note": "高频生活服务的代表，一次理发最能反映人工服务价格的时代位移。",
+                    "price_then": 1.0,
+                    "price_now": 35.0
+                }
             ]
             
             # 只添加缺少的商品

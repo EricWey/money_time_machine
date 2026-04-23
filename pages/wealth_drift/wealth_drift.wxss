@@ -405,6 +405,14 @@
   flex: 1;
 }
 
+.field-error-text {
+  display: block;
+  margin-top: 14rpx;
+  color: #8e3830;
+  font-size: 22rpx;
+  line-height: 1.6;
+}
+
 .mini-retry-button {
   min-width: 150rpx;
   height: 66rpx;

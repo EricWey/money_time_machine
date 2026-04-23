@@ -6,6 +6,7 @@
 """
 
 import logging
+import random
 from typing import Optional, Dict, Any
 
 try:
@@ -14,6 +15,7 @@ except ImportError:  # pragma: no cover
     Client = Any
 
 from services.fallback_data import FALLBACK_CITY_PRICES, FALLBACK_MACRO_DATA
+from services.item_metadata import get_item_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -206,6 +208,9 @@ class Calculator:
                 
                 comparison_results.append({
                     "name": item.get("name", "未知商品"),
+                    "unit": item.get("unit"),
+                    "category": item.get("category"),
+                    "note": item.get("note"),
                     "price_then": price_then,
                     "price_now": price_now,
                     "purchasing_power": purchasing_power
@@ -216,3 +221,42 @@ class Calculator:
                 continue
         
         return comparison_results
+
+    def build_random_item_comparison_set(self, city: str, source_year: int, target_year: int = 2024, sample_size: int = 3) -> list:
+        """
+        构建随机商品对比集合。
+        仅从起始年份与目标年份都存在价格的商品中抽样。
+        """
+        source_prices = self.get_city_prices(city, source_year) or []
+        target_prices = self.get_city_prices(city, target_year) or []
+
+        target_map = {
+            item.get("item_name"): item
+            for item in target_prices
+            if item.get("item_name") and item.get("price") is not None
+        }
+
+        candidates = []
+        for source_item in source_prices:
+            item_name = source_item.get("item_name")
+            if not item_name:
+                continue
+
+            target_item = target_map.get(item_name)
+            if not target_item:
+                continue
+
+            metadata = get_item_metadata(item_name)
+            candidates.append({
+                "name": item_name,
+                "unit": source_item.get("unit") or target_item.get("unit") or metadata.get("unit"),
+                "category": source_item.get("category") or target_item.get("category") or metadata.get("category"),
+                "note": metadata.get("note"),
+                "price_then": source_item.get("price", 0),
+                "price_now": target_item.get("price", 0),
+            })
+
+        if len(candidates) <= sample_size:
+            return candidates
+
+        return random.sample(candidates, sample_size)

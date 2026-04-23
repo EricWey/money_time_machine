@@ -38,6 +38,7 @@ Page({
     result: null,
     stampVisible: false,
     error: '',
+    incomeError: '',
     driftError: null,
     commentError: null,
     loadingDrift: false,
@@ -53,6 +54,11 @@ Page({
 
   onLoad() {
     this.activeRunId = 0
+    this.pageScrollTop = 0
+  },
+
+  onPageScroll(event) {
+    this.pageScrollTop = event.scrollTop || 0
   },
 
   bindCitySearch(e) {
@@ -130,11 +136,40 @@ Page({
   noop() {},
 
   bindIncomeInput(e) {
+    const rawValue = e.detail.value || ''
+    const sanitizedValue = rawValue.replace(/[^\d]/g, '')
+
     this.setData({
-      monthlyIncome: e.detail.value.replace(/[^\d]/g, ''),
+      monthlyIncome: sanitizedValue,
       error: '',
+      incomeError: rawValue !== sanitizedValue ? '月收入只能输入正整数，请填写 101 到 499999 之间的整数。' : '',
       driftError: null
     })
+  },
+
+  validateIncomeValue(value) {
+    if (!value) {
+      return '请输入月收入，填写 101 到 499999 之间的整数。'
+    }
+
+    if (!/^[1-9]\d*$/.test(value)) {
+      return '月收入只能输入正整数，请填写 101 到 499999 之间的整数。'
+    }
+
+    const income = Number(value)
+    if (income <= 100 || income >= 500000) {
+      return '月收入需大于 100 且小于 500000，请输入 101 到 499999 之间的整数。'
+    }
+
+    return ''
+  },
+
+  validateIncomeField() {
+    const incomeError = this.validateIncomeValue(this.data.monthlyIncome)
+    this.setData({
+      incomeError
+    })
+    return !incomeError
   },
 
   chooseIncomePreset(e) {
@@ -142,17 +177,22 @@ Page({
     this.setData({
       monthlyIncome: value,
       error: '',
+      incomeError: '',
       driftError: null
     })
   },
 
   resetForm() {
+    const previousScrollTop = this.pageScrollTop || 0
+
     this.activeRunId += 1
     this.setData({
       pageStage: 'form',
       transitioning: false,
       stampVisible: false,
       activePicker: 'none',
+      error: '',
+      incomeError: '',
       loadingDrift: false,
       loadingComment: false,
       driftError: null,
@@ -163,11 +203,18 @@ Page({
       posterTempFilePath: '',
       posterError: '',
       shareHint: ''
+    }, () => {
+      if (previousScrollTop > 0) {
+        wx.pageScrollTo({
+          selector: '.stage-card',
+          duration: 0
+        })
+      }
     })
   },
 
   validateForm() {
-    const income = Number(this.data.monthlyIncome)
+    const incomeError = this.validateIncomeValue(this.data.monthlyIncome)
 
     if (!this.data.currentCity || !this.data.targetCity || !this.data.monthlyIncome) {
       return '先把城市和月收入补齐，漂流瓶才知道往哪儿冲。'
@@ -181,8 +228,8 @@ Page({
       return '起点和终点是同一座城的话，这趟漂流只会得到“原地打工”。'
     }
 
-    if (!income || income <= 0) {
-      return '月收入得是大于 0 的数字，不然财富轨迹无法起飞。'
+    if (incomeError) {
+      return incomeError
     }
 
     return ''
@@ -192,7 +239,8 @@ Page({
     const validationError = this.validateForm()
     if (validationError) {
       this.setData({
-        error: validationError
+        error: validationError,
+        incomeError: this.validateIncomeValue(this.data.monthlyIncome)
       })
       return
     }
@@ -211,6 +259,7 @@ Page({
       loadingComment: true,
       loadingText: `正在把 ${this.data.currentCity} 的工资条漂向 ${this.data.targetCity}`,
       error: '',
+      incomeError: '',
       driftError: null,
       commentError: null,
       expertComment: '',

@@ -85,52 +85,50 @@ class CityDataSeeder:
         Returns:
             城市数据列表
         """
-        city_data = [
-            {
-                "city_name": "上海",
-                "province": "上海市",
-                "coli_index": 100.00,
-                "median_income": 7800,
-                "region_level": 1
-            },
-            {
-                "city_name": "北京",
-                "province": "北京市",
-                "coli_index": 98.00,
-                "median_income": 7500,
-                "region_level": 1
-            },
-            {
-                "city_name": "深圳",
-                "province": "广东省",
-                "coli_index": 95.00,
-                "median_income": 7200,
-                "region_level": 1
-            },
-            {
-                "city_name": "郑州",
-                "province": "河南省",
-                "coli_index": 65.00,
-                "median_income": 3500,
-                "region_level": 2
-            },
-            {
-                "city_name": "开封",
-                "province": "河南省",
-                "coli_index": 52.00,
-                "median_income": 2800,
-                "region_level": 2
-            },
-            {
-                "city_name": "鹤岗",
-                "province": "黑龙江省",
-                "coli_index": 30.00,
-                "median_income": 1800,
-                "region_level": 2
-            }
+        raw_city_data = [
+            ("北京", "北京市", 98.00, 7800, 1),
+            ("上海", "上海市", 100.00, 8100, 1),
+            ("天津", "天津市", 79.00, 5600, 1),
+            ("重庆", "重庆市", 72.00, 4600, 1),
+            ("石家庄", "河北省", 63.00, 4200, 2),
+            ("太原", "山西省", 64.00, 4300, 2),
+            ("呼和浩特", "内蒙古自治区", 62.00, 4100, 2),
+            ("沈阳", "辽宁省", 68.00, 4700, 2),
+            ("长春", "吉林省", 63.00, 4200, 2),
+            ("哈尔滨", "黑龙江省", 65.00, 4300, 2),
+            ("南京", "江苏省", 84.00, 6500, 1),
+            ("杭州", "浙江省", 88.00, 7100, 1),
+            ("合肥", "安徽省", 66.00, 4600, 2),
+            ("福州", "福建省", 69.00, 4700, 2),
+            ("南昌", "江西省", 64.00, 4300, 2),
+            ("济南", "山东省", 67.00, 4600, 2),
+            ("郑州", "河南省", 65.00, 4400, 2),
+            ("武汉", "湖北省", 74.00, 5000, 2),
+            ("长沙", "湖南省", 69.00, 4700, 2),
+            ("广州", "广东省", 92.00, 7300, 1),
+            ("南宁", "广西壮族自治区", 60.00, 4000, 2),
+            ("海口", "海南省", 66.00, 4200, 2),
+            ("成都", "四川省", 72.00, 4900, 2),
+            ("贵阳", "贵州省", 58.00, 3900, 2),
+            ("昆明", "云南省", 61.00, 4100, 2),
+            ("拉萨", "西藏自治区", 67.00, 4400, 2),
+            ("西安", "陕西省", 70.00, 4600, 2),
+            ("兰州", "甘肃省", 60.00, 4000, 2),
+            ("西宁", "青海省", 59.00, 3900, 2),
+            ("银川", "宁夏回族自治区", 58.00, 3900, 2),
+            ("乌鲁木齐", "新疆维吾尔自治区", 65.00, 4300, 2),
         ]
 
-        return city_data
+        return [
+            {
+                "city_name": city_name,
+                "province": province,
+                "coli_index": coli_index,
+                "median_income": median_income,
+                "region_level": region_level
+            }
+            for city_name, province, coli_index, median_income, region_level in raw_city_data
+        ]
 
     def check_city_exists(self, city_name: str) -> bool:
         """

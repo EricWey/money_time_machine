@@ -99,7 +99,7 @@
     <view class="matrix-section">
       <view class="matrix-header">
         <text class="section-kicker">实物矩阵</text>
-        <text class="matrix-subtitle">用 3 件日常物件，看见价格年代感</text>
+        <text class="matrix-subtitle">3件日常物件，让你看见价格年代感</text>
       </view>
 
       <view class="matrix-grid">
@@ -108,8 +108,8 @@
             <image class="matrix-image" src="{{item.image}}" mode="aspectFit" />
           </view>
           <text class="matrix-title">{{item.title}}</text>
-          <text class="matrix-price">{{result.year}} 年：{{item.priceThen}} {{item.unit}}</text>
-          <text class="matrix-price current">2026 年：{{item.priceNow}} {{item.unit}}</text>
+          <text class="matrix-price">{{result.year}} 年：{{item.priceThen}} 元 /{{item.unit}}</text>
+          <text class="matrix-price current">2026 年：{{item.priceNow}}元 /{{item.unit}}</text>
           <text class="matrix-comparison">{{item.comparison}}</text>
           <text class="matrix-note">{{item.note}}</text>
         </view>

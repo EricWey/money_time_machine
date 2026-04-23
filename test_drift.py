@@ -170,6 +170,11 @@ class TestConvertAPI:
         assert "items" in data
         assert "ai_comment" in data
         assert data["equivalent_amount"] > 0
+        assert len(data["items"]) == 3
+        for item in data["items"]:
+            assert item["unit"]
+            assert item["note"]
+            assert item["category"]
 
     def test_invalid_year_too_old(self):
         """年份太旧"""

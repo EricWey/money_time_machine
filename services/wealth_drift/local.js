@@ -1,148 +1,66 @@
-const CITY_LIBRARY = [
-  {
-    name: '北京',
-    keywords: ['beijing', '帝都', '京'],
-    coli: 98,
-    medianIncome: 7500,
-    level: 'super',
-    vibe: '北漂',
-    metrics: { housing: 7200, dining: 1700, traffic: 520, entertainment: 1500 }
-  },
-  {
-    name: '上海',
-    keywords: ['shanghai', '魔都', '沪'],
-    coli: 100,
-    medianIncome: 7800,
-    level: 'super',
-    vibe: '沪漂',
-    metrics: { housing: 7600, dining: 1800, traffic: 480, entertainment: 1650 }
-  },
-  {
-    name: '深圳',
-    keywords: ['shenzhen', '深', '鹏城'],
-    coli: 95,
-    medianIncome: 7200,
-    level: 'super',
-    vibe: '搞钱人',
-    metrics: { housing: 6900, dining: 1650, traffic: 430, entertainment: 1520 }
-  },
-  {
-    name: '广州',
-    keywords: ['guangzhou', '广', '羊城'],
-    coli: 92,
-    medianIncome: 6900,
-    level: 'super',
-    vibe: '老广',
-    metrics: { housing: 6200, dining: 1550, traffic: 400, entertainment: 1420 }
-  },
-  {
-    name: '杭州',
-    keywords: ['hangzhou', '杭', '互联网'],
-    coli: 88,
-    medianIncome: 6800,
-    level: 'new-first',
-    vibe: '大厂候选人',
-    metrics: { housing: 5800, dining: 1450, traffic: 360, entertainment: 1360 }
-  },
-  {
-    name: '南京',
-    keywords: ['nanjing', '宁', '金陵'],
-    coli: 84,
-    medianIncome: 6200,
-    level: 'new-first',
-    vibe: '六朝打工人',
-    metrics: { housing: 5000, dining: 1320, traffic: 320, entertainment: 1180 }
-  },
-  {
-    name: '成都',
-    keywords: ['chengdu', '蓉', '巴适'],
-    coli: 72,
-    medianIncome: 4700,
-    level: 'strong-second',
-    vibe: '松弛派',
-    metrics: { housing: 3600, dining: 980, traffic: 260, entertainment: 980 }
-  },
-  {
-    name: '武汉',
-    keywords: ['wuhan', '汉', '热干面'],
-    coli: 74,
-    medianIncome: 4800,
-    level: 'strong-second',
-    vibe: '过早玩家',
-    metrics: { housing: 3700, dining: 1020, traffic: 270, entertainment: 930 }
-  },
-  {
-    name: '西安',
-    keywords: ['xian', '西安', '长安'],
-    coli: 70,
-    medianIncome: 4300,
-    level: 'strong-second',
-    vibe: '碳水王者',
-    metrics: { housing: 3400, dining: 960, traffic: 240, entertainment: 880 }
-  },
-  {
-    name: '重庆',
-    keywords: ['chongqing', '渝', '山城'],
-    coli: 68,
-    medianIncome: 4200,
-    level: 'strong-second',
-    vibe: '火锅狠人',
-    metrics: { housing: 3200, dining: 930, traffic: 250, entertainment: 910 }
-  },
-  {
-    name: '郑州',
-    keywords: ['zhengzhou', '郑', '中原'],
-    coli: 65,
-    medianIncome: 3500,
-    level: 'second',
-    vibe: '中原实干派',
-    metrics: { housing: 2800, dining: 860, traffic: 210, entertainment: 760 }
-  },
-  {
-    name: '开封',
-    keywords: ['kaifeng', '汴梁', '开'],
-    coli: 52,
-    medianIncome: 2800,
-    level: 'second',
-    vibe: '小城慢活家',
-    metrics: { housing: 1900, dining: 620, traffic: 120, entertainment: 520 }
-  },
-  {
-    name: '鹤岗',
-    keywords: ['hegang', '鹤'],
-    coli: 30,
-    medianIncome: 1800,
-    level: 'small',
-    vibe: '低压生存派',
-    metrics: { housing: 900, dining: 430, traffic: 80, entertainment: 310 }
-  },
-  {
-    name: '长沙',
-    keywords: ['changsha', '湘', '夜宵'],
-    coli: 69,
-    medianIncome: 4300,
-    level: 'strong-second',
-    vibe: '夜生活选手',
-    metrics: { housing: 3300, dining: 950, traffic: 230, entertainment: 900 }
-  },
-  {
-    name: '苏州',
-    keywords: ['suzhou', '苏', '园林'],
-    coli: 86,
-    medianIncome: 6500,
-    level: 'new-first',
-    vibe: '精致勤奋派',
-    metrics: { housing: 5400, dining: 1380, traffic: 310, entertainment: 1160 }
-  },
-  {
-    name: '青岛',
-    keywords: ['qingdao', '青', '海风'],
-    coli: 73,
-    medianIncome: 4700,
-    level: 'strong-second',
-    vibe: '海边微醺派',
-    metrics: { housing: 3500, dining: 1010, traffic: 240, entertainment: 950 }
+function roundToNearest(value, base) {
+  return Math.round(value / base) * base
+}
+
+function buildMetrics(level, medianIncome, coli) {
+  const housingShareMap = {
+    super: 0.95,
+    'new-first': 0.84,
+    'strong-second': 0.76,
+    second: 0.68
   }
+  const housing = roundToNearest(medianIncome * (housingShareMap[level] || 0.7), 50)
+  const dining = roundToNearest(520 + coli * 11.5, 10)
+  const traffic = roundToNearest(70 + coli * 3.4, 10)
+  const entertainment = roundToNearest(260 + coli * 7.8, 10)
+
+  return { housing, dining, traffic, entertainment }
+}
+
+function createCity({ name, keywords, coli, medianIncome, level, vibe, metrics }) {
+  return {
+    name,
+    keywords,
+    coli,
+    medianIncome,
+    level,
+    vibe,
+    metrics: metrics || buildMetrics(level, medianIncome, coli)
+  }
+}
+
+const CITY_LIBRARY = [
+  createCity({ name: '北京', keywords: ['beijing', '帝都', '京'], coli: 98, medianIncome: 7800, level: 'super', vibe: '北漂' }),
+  createCity({ name: '上海', keywords: ['shanghai', '魔都', '沪'], coli: 100, medianIncome: 8100, level: 'super', vibe: '沪漂' }),
+  createCity({ name: '天津', keywords: ['tianjin', '津'], coli: 79, medianIncome: 5600, level: 'new-first', vibe: '津门生活家' }),
+  createCity({ name: '重庆', keywords: ['chongqing', '渝', '山城'], coli: 72, medianIncome: 4600, level: 'strong-second', vibe: '火锅狠人' }),
+  createCity({ name: '石家庄', keywords: ['shijiazhuang', '石家庄', '冀'], coli: 63, medianIncome: 4200, level: 'second', vibe: '冀中实干派' }),
+  createCity({ name: '太原', keywords: ['taiyuan', '并州', '晋'], coli: 64, medianIncome: 4300, level: 'second', vibe: '并州稳派' }),
+  createCity({ name: '呼和浩特', keywords: ['huhehaote', '呼市', '青城'], coli: 62, medianIncome: 4100, level: 'second', vibe: '草原通勤人' }),
+  createCity({ name: '沈阳', keywords: ['shenyang', '盛京', '沈'], coli: 68, medianIncome: 4700, level: 'strong-second', vibe: '东北爽快派' }),
+  createCity({ name: '长春', keywords: ['changchun', '春城', '吉'], coli: 63, medianIncome: 4200, level: 'second', vibe: '北国稳班人' }),
+  createCity({ name: '哈尔滨', keywords: ['haerbin', 'harbin', '冰城'], coli: 65, medianIncome: 4300, level: 'second', vibe: '冰城生活派' }),
+  createCity({ name: '南京', keywords: ['nanjing', '宁', '金陵'], coli: 84, medianIncome: 6500, level: 'new-first', vibe: '六朝打工人' }),
+  createCity({ name: '杭州', keywords: ['hangzhou', '杭', '互联网'], coli: 88, medianIncome: 7100, level: 'new-first', vibe: '大厂候选人' }),
+  createCity({ name: '合肥', keywords: ['hefei', '庐州', '合'], coli: 66, medianIncome: 4600, level: 'strong-second', vibe: '科创打拼人' }),
+  createCity({ name: '福州', keywords: ['fuzhou', '榕城', '榕'], coli: 69, medianIncome: 4700, level: 'strong-second', vibe: '榕城慢锋派' }),
+  createCity({ name: '南昌', keywords: ['nanchang', '洪城', '赣'], coli: 64, medianIncome: 4300, level: 'second', vibe: '洪城实在人' }),
+  createCity({ name: '济南', keywords: ['jinan', '泉城', '鲁'], coli: 67, medianIncome: 4600, level: 'strong-second', vibe: '泉城进取派' }),
+  createCity({ name: '郑州', keywords: ['zhengzhou', '郑', '中原'], coli: 65, medianIncome: 4400, level: 'strong-second', vibe: '中原实干派' }),
+  createCity({ name: '武汉', keywords: ['wuhan', '汉', '热干面'], coli: 74, medianIncome: 5000, level: 'strong-second', vibe: '过早玩家' }),
+  createCity({ name: '长沙', keywords: ['changsha', '湘', '夜宵'], coli: 69, medianIncome: 4700, level: 'strong-second', vibe: '夜生活选手' }),
+  createCity({ name: '广州', keywords: ['guangzhou', '广', '羊城'], coli: 92, medianIncome: 7300, level: 'super', vibe: '老广' }),
+  createCity({ name: '南宁', keywords: ['nanning', '邕城', '邕'], coli: 60, medianIncome: 4000, level: 'second', vibe: '邕城悠然派' }),
+  createCity({ name: '海口', keywords: ['haikou', '椰城', '琼'], coli: 66, medianIncome: 4200, level: 'second', vibe: '海风慢活家' }),
+  createCity({ name: '成都', keywords: ['chengdu', '蓉', '巴适'], coli: 72, medianIncome: 4900, level: 'strong-second', vibe: '松弛派' }),
+  createCity({ name: '贵阳', keywords: ['guiyang', '筑城', '黔'], coli: 58, medianIncome: 3900, level: 'second', vibe: '山城节奏派' }),
+  createCity({ name: '昆明', keywords: ['kunming', '春城', '滇'], coli: 61, medianIncome: 4100, level: 'second', vibe: '春城呼吸派' }),
+  createCity({ name: '拉萨', keywords: ['lasa', '拉萨', '藏'], coli: 67, medianIncome: 4400, level: 'second', vibe: '高原慢行者' }),
+  createCity({ name: '西安', keywords: ['xian', '西安', '长安'], coli: 70, medianIncome: 4600, level: 'strong-second', vibe: '碳水王者' }),
+  createCity({ name: '兰州', keywords: ['lanzhou', '金城', '甘'], coli: 60, medianIncome: 4000, level: 'second', vibe: '兰州拉面派' }),
+  createCity({ name: '西宁', keywords: ['xining', '夏都', '青'], coli: 59, medianIncome: 3900, level: 'second', vibe: '高原稳住派' }),
+  createCity({ name: '银川', keywords: ['yinchuan', '凤城', '宁夏'], coli: 58, medianIncome: 3900, level: 'second', vibe: '塞上松弛派' }),
+  createCity({ name: '乌鲁木齐', keywords: ['wulumuqi', 'urumqi', '乌市'], coli: 65, medianIncome: 4300, level: 'second', vibe: '边城硬核派' })
 ]
 
 const CITY_MAP = CITY_LIBRARY.reduce((result, city) => {

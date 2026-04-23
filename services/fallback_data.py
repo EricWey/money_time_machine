@@ -41,6 +41,40 @@ VALID_CITIES = [
     "乌鲁木齐"
 ]
 
+_RAW_CITY_DATA = [
+    ("北京", 98.0, 7800.0, "北京市"),
+    ("上海", 100.0, 8100.0, "上海市"),
+    ("天津", 79.0, 5600.0, "天津市"),
+    ("重庆", 72.0, 4600.0, "重庆市"),
+    ("石家庄", 63.0, 4200.0, "河北省"),
+    ("太原", 64.0, 4300.0, "山西省"),
+    ("呼和浩特", 62.0, 4100.0, "内蒙古自治区"),
+    ("沈阳", 68.0, 4700.0, "辽宁省"),
+    ("长春", 63.0, 4200.0, "吉林省"),
+    ("哈尔滨", 65.0, 4300.0, "黑龙江省"),
+    ("南京", 84.0, 6500.0, "江苏省"),
+    ("杭州", 88.0, 7100.0, "浙江省"),
+    ("合肥", 66.0, 4600.0, "安徽省"),
+    ("福州", 69.0, 4700.0, "福建省"),
+    ("南昌", 64.0, 4300.0, "江西省"),
+    ("济南", 67.0, 4600.0, "山东省"),
+    ("郑州", 65.0, 4400.0, "河南省"),
+    ("武汉", 74.0, 5000.0, "湖北省"),
+    ("长沙", 69.0, 4700.0, "湖南省"),
+    ("广州", 92.0, 7300.0, "广东省"),
+    ("南宁", 60.0, 4000.0, "广西壮族自治区"),
+    ("海口", 66.0, 4200.0, "海南省"),
+    ("成都", 72.0, 4900.0, "四川省"),
+    ("贵阳", 58.0, 3900.0, "贵州省"),
+    ("昆明", 61.0, 4100.0, "云南省"),
+    ("拉萨", 67.0, 4400.0, "西藏自治区"),
+    ("西安", 70.0, 4600.0, "陕西省"),
+    ("兰州", 60.0, 4000.0, "甘肃省"),
+    ("西宁", 59.0, 3900.0, "青海省"),
+    ("银川", 58.0, 3900.0, "宁夏回族自治区"),
+    ("乌鲁木齐", 65.0, 4300.0, "新疆维吾尔自治区"),
+]
+
 _RAW_MACRO_DATA = [
     (1980, 6.0, 19.0, 7.9, 100),
     (1981, 2.4, 14.5, 5.1, 105),
@@ -111,39 +145,58 @@ def build_macro_fallback_data() -> Dict[int, dict]:
 FALLBACK_MACRO_DATA = build_macro_fallback_data()
 
 FALLBACK_CITY_DATA = {
-    "上海": {"city_name": "上海", "coli_index": 100.0, "median_income": 7800.0, "province": "上海市"},
-    "北京": {"city_name": "北京", "coli_index": 98.0, "median_income": 7500.0, "province": "北京市"},
-    "深圳": {"city_name": "深圳", "coli_index": 95.0, "median_income": 7200.0, "province": "广东省"},
-    "郑州": {"city_name": "郑州", "coli_index": 65.0, "median_income": 3500.0, "province": "河南省"},
-    "开封": {"city_name": "开封", "coli_index": 52.0, "median_income": 2800.0, "province": "河南省"},
-    "鹤岗": {"city_name": "鹤岗", "coli_index": 30.0, "median_income": 1800.0, "province": "黑龙江省"},
-    "广州": {"city_name": "广州", "coli_index": 92.0, "median_income": 6900.0, "province": "广东省"},
-    "杭州": {"city_name": "杭州", "coli_index": 88.0, "median_income": 6800.0, "province": "浙江省"},
-    "成都": {"city_name": "成都", "coli_index": 72.0, "median_income": 4700.0, "province": "四川省"},
-    "武汉": {"city_name": "武汉", "coli_index": 74.0, "median_income": 4800.0, "province": "湖北省"},
-    "西安": {"city_name": "西安", "coli_index": 70.0, "median_income": 4300.0, "province": "陕西省"},
-    "南京": {"city_name": "南京", "coli_index": 84.0, "median_income": 6200.0, "province": "江苏省"},
-    "重庆": {"city_name": "重庆", "coli_index": 68.0, "median_income": 4200.0, "province": "重庆市"},
+    city_name: {
+        "city_name": city_name,
+        "coli_index": coli_index,
+        "median_income": median_income,
+        "province": province,
+    }
+    for city_name, coli_index, median_income, province in _RAW_CITY_DATA
 }
 
 FALLBACK_CITY_PRICES: Dict[str, Dict[int, List[dict]]] = {
     "北京": {
         1990: [
-            {"item_name": "猪肉", "price": 2.5},
-            {"item_name": "大米", "price": 0.8},
-            {"item_name": "鸡蛋", "price": 1.2},
+            {"item_name": "梗米", "price": 0.8, "unit": "元/斤", "category": "food"},
+            {"item_name": "大豆油", "price": 2.6, "unit": "元/升", "category": "food"},
+            {"item_name": "精瘦肉", "price": 2.5, "unit": "元/斤", "category": "food"},
+            {"item_name": "棉质T恤", "price": 18.0, "unit": "元/件", "category": "clothing"},
+            {"item_name": "330ml啤酒", "price": 1.5, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "500ml五粮液", "price": 98.0, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "月平均工资", "price": 214.0, "unit": "元/月", "category": "income"},
+            {"item_name": "理发", "price": 1.0, "unit": "元/次", "category": "service"},
         ],
         2024: [
-            {"item_name": "猪肉", "price": 25.0},
-            {"item_name": "大米", "price": 6.0},
-            {"item_name": "鸡蛋", "price": 12.0},
+            {"item_name": "梗米", "price": 6.2, "unit": "元/斤", "category": "food"},
+            {"item_name": "大豆油", "price": 16.8, "unit": "元/升", "category": "food"},
+            {"item_name": "精瘦肉", "price": 25.0, "unit": "元/斤", "category": "food"},
+            {"item_name": "棉质T恤", "price": 89.0, "unit": "元/件", "category": "clothing"},
+            {"item_name": "330ml啤酒", "price": 6.5, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "500ml五粮液", "price": 1499.0, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "月平均工资", "price": 12183.0, "unit": "元/月", "category": "income"},
+            {"item_name": "理发", "price": 35.0, "unit": "元/次", "category": "service"},
         ],
     },
     "上海": {
+        1990: [
+            {"item_name": "梗米", "price": 0.9, "unit": "元/斤", "category": "food"},
+            {"item_name": "大豆油", "price": 2.8, "unit": "元/升", "category": "food"},
+            {"item_name": "精瘦肉", "price": 2.7, "unit": "元/斤", "category": "food"},
+            {"item_name": "棉质T恤", "price": 20.0, "unit": "元/件", "category": "clothing"},
+            {"item_name": "330ml啤酒", "price": 1.8, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "500ml五粮液", "price": 108.0, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "月平均工资", "price": 240.0, "unit": "元/月", "category": "income"},
+            {"item_name": "理发", "price": 1.2, "unit": "元/次", "category": "service"},
+        ],
         2024: [
-            {"item_name": "猪肉", "price": 28.0},
-            {"item_name": "大米", "price": 6.5},
-            {"item_name": "鸡蛋", "price": 13.0},
+            {"item_name": "梗米", "price": 6.5, "unit": "元/斤", "category": "food"},
+            {"item_name": "大豆油", "price": 17.5, "unit": "元/升", "category": "food"},
+            {"item_name": "精瘦肉", "price": 28.0, "unit": "元/斤", "category": "food"},
+            {"item_name": "棉质T恤", "price": 99.0, "unit": "元/件", "category": "clothing"},
+            {"item_name": "330ml啤酒", "price": 7.0, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "500ml五粮液", "price": 1599.0, "unit": "元/瓶", "category": "beverage"},
+            {"item_name": "月平均工资", "price": 12486.0, "unit": "元/月", "category": "income"},
+            {"item_name": "理发", "price": 38.0, "unit": "元/次", "category": "service"},
         ]
     },
 }

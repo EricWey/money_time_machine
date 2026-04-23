@@ -49,7 +49,7 @@
                   bindtap="selectCity"
                 >
                   <text class="picker-city">{{item.name}}</text>
-                  <text class="picker-meta">COLI {{item.coli}} / 中位月收入 {{item.medianIncome}}</text>
+                  <text class="picker-meta">2025年中位月收入 ¥{{item.medianIncome}}</text>
                 </view>
                 <view wx:if="{{!filteredCurrentCities.length}}" class="picker-empty">没搜到这座城，先从现有样本里挑一个。</view>
               </scroll-view>
@@ -67,9 +67,12 @@
                   placeholder="输入你每月到手的底气"
                   placeholder-class="field-placeholder"
                   bindinput="bindIncomeInput"
+                  bindblur="validateIncomeField"
                   value="{{monthlyIncome}}"
                 />
               </view>
+
+              <text wx:if="{{incomeError}}" class="field-error-text">{{incomeError}}</text>
 
               <view class="preset-grid">
                 <view
@@ -116,7 +119,7 @@
                   bindtap="selectCity"
                 >
                   <text class="picker-city">{{item.name}}</text>
-                  <text class="picker-meta">COLI {{item.coli}} / 中位月收入 {{item.medianIncome}}</text>
+                  <text class="picker-meta">2025年中位月收入 ¥{{item.medianIncome}}</text>
                 </view>
                 <view wx:if="{{!filteredTargetCities.length}}" class="picker-empty">没有精确匹配，先选个方向最接近的。</view>
               </scroll-view>
@@ -230,7 +233,7 @@
         </view>
 
         <view class="bottom-note">
-          <text class="note-main">{{result.targetCity.name}} 当地中位月收入约 ¥{{result.targetMedianIncome}}</text>
+          <text class="note-main">{{result.targetCity.name}} 2025年中位月收入约 ¥{{result.targetMedianIncome}}</text>
           <text class="note-sub">这只是核心生活成本模拟，不含冲动消费、恋爱成本和突然很想辞职的代价。</text>
         </view>
 
