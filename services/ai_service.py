@@ -24,15 +24,11 @@ class AIService:
     def _build_price_guardrail_system_prompt(self) -> str:
         """构建 DeepSeek 系统级约束提示词。"""
         return (
-            "你是一位精通中国近 50 年经济史的首席精算师，风格怀旧、言辞犀利（毒舌但客观）。"
-            "在生成与历史购买力、年份物价、价格对比相关的内容时，"
-            "必须把系统已提供的当年完整物价信息视为最高优先级、唯一可直接依赖的事实来源。"
-            "请严格遵守以下规则："
-            "1. 仅在系统已提供的年份、城市、商品、价格、单位、购买力对比范围内进行表达；"
-            "2. 物价信息的优先级高于通用常识、语言模型记忆、主观印象和修辞需要；"
-            "3. 如需提及价格或购买力判断，必须优先引用输入中明确给出的物价数据、金额和对比结果，不得自行补充未提供的商品价格、统计数据或年代细节；"
-            "4. 若已提供数据不足以支撑某个具体判断，应弱化表述，只能做基于现有数据的概括，禁止编造；"
-            "5. 输出可以有风格，但不能牺牲事实准确性，不得出现与已提供物价信息冲突的内容。"
+            "你是一位精通中国近 50 年经济史的“首席财富精算师”。你的人格特征如下："
+            "1. 专业且刻薄：你看透了名义货币的数字游戏，擅长用通胀和购买力稀释的真相“扎”醒用户。"
+            "2. 毒舌且风趣：语言犀利，多用反讽、对标和生活化的尖锐对比，拒绝官方套话。"
+            "3. 事实至上：你对 80 年代的粮票、90 年代的下海潮、00 年代的房改如数家珍，评论必须建立在事实基础上。"
+            "4. 语言风格：北京老炮的损、上海老克勒的傲、互联网毒舌的快，三者结合。"
         )
     
     def _format_price_items(self, price_items: Sequence[Mapping[str, Any]]) -> str:
@@ -77,11 +73,14 @@ class AIService:
         try:
             system_prompt = self._build_price_guardrail_system_prompt()
             prompt = (
-                f"请基于系统已获取的{source_year}年完整物价信息，"
-                f"对“用户在{source_year}年的{amount}元，现在相当于{equivalent_amount}元”写一句100字以内的点评。"
-                "你可以保持怀旧且刻薄（但专业）的风格，但必须严格依据下面的数据进行表达。"
-                "如果数据只能支持概括性判断，就只做概括，不要扩展到未提供的价格事实。\n\n"
-                f"系统已获取的物价信息如下：\n{self._format_price_items(price_items)}"
+                f"请对以下财富变迁进行一次\"灵魂辣评\":\n"
+                f"- 【核心数据】：{source_year} 年的 {amount} 元，相当于今天的 {equivalent_amount} 元。\n"
+                f"- 【历史参考】：物价： {self._format_price_items(price_items)}。\n"
+                f"要求：\n"
+                f"1. 必须直接引用【历史参考】中的实物数据进行对比。\n"
+                f"2. 风格要足够“辣”，重点嘲讽“数字涨了，地位跌了”的真相。\n"
+                f"3. 严禁使用“通货膨胀”、“物价上涨”等无聊词汇，改用更具画面感的词。\n"
+                f"4. 严格限制在80字以内。"
             )
             
             # 调用DeepSeek API
@@ -160,3 +159,29 @@ class AIService:
         except Exception as e:
             logger.error(f"生成自定义评价时出错: {str(e)}")
             return None
+
+    def generate_drift_essay(self, current_city: str, target_city: str, monthly_income: float,
+                         equivalent_amount: float, identity_label: str) -> Optional[str]:
+        """
+        生成财富漂流感言
+
+        Args:
+            current_city: 当前城市
+            target_city: 目标城市
+            monthly_income: 月收入
+            equivalent_amount: 等值收入
+            identity_label: 身份标签
+
+        Returns:
+            AI生成的感言，失败返回None
+        """
+        prompt = f"""请根据以下"财富漂流"结果，写一段犀利风趣的深度吐槽：
+                - 用户从{current_city}来到{target_city}。
+                - 【购买力变迁】：月薪 {monthly_income} 元转换后，相当于{target_city}的 {equivalent_amount} 元购买力。
+                - 【系统判定身份】：{identity_label}。
+                要求：
+                1. 结合两地典型的生活方式差异进行攻击。
+                2. 文案要符合【系统判定身份】的社会语境，越毒舌越好。
+                3. 揭示"地理位置决定阶层"的扎心现实。
+                4. 严格限制在 100 字以内。"""
+        return self.generate_custom_comment(prompt)

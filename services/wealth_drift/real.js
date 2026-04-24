@@ -1,7 +1,7 @@
 const { requestDrift, requestConvert } = require('../../utils/api')
 const { getCache, setCache } = require('../../utils/cache')
 
-const COMMENT_SOURCE_YEAR = 2024
+const COMMENT_SOURCE_YEAR = 2025
 const DRIFT_CACHE_TTL = 30 * 60 * 1000
 const COMMENT_CACHE_TTL = 12 * 60 * 60 * 1000
 

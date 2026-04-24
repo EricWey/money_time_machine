@@ -383,27 +383,6 @@ def generate_city_comparison(current_city: str, target_city: str, current_coli: 
 
     return random.choice(comparisons)
 
-def generate_drift_essay(current_city: str, target_city: str, monthly_income: float,
-                         equivalent_amount: float, identity_label: str) -> str:
-    """
-    生成财富漂流感言
-
-    Args:
-        current_city: 当前城市
-        target_city: 目标城市
-        monthly_income: 月收入
-        equivalent_amount: 等值收入
-        identity_label: 身份标签
-
-    Returns:
-        AI生成的感言
-    """
-    prompt = f"你是一个经历过城市漂泊的财务专家。用户从{current_city}来到{target_city}，"
-    prompt += f"月薪{monthly_income}元，在新城市相当于{equivalent_amount}元的购买力。"
-    prompt += f"他的身份标签是'{identity_label}'。"
-    prompt += "请结合两座城市的生活差异，写一段50字以内的财富漂流感言，要有深度和共鸣。"
-
-    return ai_service.generate_custom_comment(prompt)
 
 @app.post("/api/v1/drift", response_model=DriftResponse)
 async def calculate_drift(request: DriftRequest):
@@ -457,7 +436,7 @@ async def calculate_drift(request: DriftRequest):
             target_city_coli
         )
 
-        ai_essay = generate_drift_essay(
+        ai_essay = ai_service.generate_drift_essay(
             request.current_city,
             request.target_city,
             request.monthly_income,

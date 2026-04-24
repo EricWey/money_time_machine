@@ -1,4 +1,9 @@
 {
   "desc": "money_time_machine sitemap",
-  "rules": []
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
 }
