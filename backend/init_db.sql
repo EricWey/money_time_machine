@@ -5,7 +5,7 @@ CREATE TABLE macro_economics (
     m2_growth DECIMAL(18, 4) NOT NULL,          -- M2 货币供应同比增速 (%)
     gdp_growth DECIMAL(18, 4) NOT NULL,          -- GDP 同比增速 (%)
     m2_adj DECIMAL(18, 4) NOT NULL,             -- M2 修正因子 (M2增速 - GDP增速)
-    property_index_nat DECIMAL(18, 4),          -- 全国平均房价指数 (作为兜底)
+    property_index_nat DECIMAL(18, 4),          -- 全国平均房价指数
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -13,7 +13,7 @@ CREATE TABLE macro_economics (
 CREATE TABLE city_data (
     city_id INT PRIMARY KEY,                    -- 行政区划代码
     city_name VARCHAR(50) NOT NULL,             -- 城市名称 (如：上海)
-    province VARCHAR(50) NOT NULL,              -- 所属省份 (用于数据兜底逻辑)
+    province VARCHAR(50) NOT NULL,              -- 所属省份
     coli_index DECIMAL(18, 2) NOT NULL,         -- 生活成本指数 (上海=100)
     median_income DECIMAL(18, 2),               -- 该城市人均可支配收入中位数 (最新)
     region_level INT DEFAULT 2,                 -- 1: 一线/省会, 2: 地级市

@@ -1,132 +1,135 @@
 # 钱值时光机
 
-钱值时光机是一个前后端分离的小项目，核心目标是把“过去的一笔钱今天值多少”和“同样工资换个城市能过什么生活”做成可视化、可分享的体验。
+钱值时光机是一个前后端分离的微信小程序项目，用来回答两个问题：
 
-当前仓库包含两部分：
+- 过去某一年的一笔钱，放到今天大概还有多少购买力
+- 同样一份月收入，换到另一座城市生活，体感会发生什么变化
 
-- Python FastAPI 后端，负责购买力换算、城市漂流计算和 AI 文案生成
-- 微信小程序前端，负责收集输入、调用接口并展示结果
+仓库同时包含 FastAPI 后端和微信小程序前端，支持本地开发联调、接口测试和页面迭代。
 
-## 1. 项目目标
+## 项目概览
 
-项目围绕两个核心场景展开：
+项目由两部分组成：
 
-- 时空等值转换器：输入历史金额、年份、城市，计算在 2024 年的大致等值购买力
-- 财富漂流瓶：输入当前城市、月收入、目标城市，估算迁移后的生活水平与身份标签
+- Python FastAPI 后端：提供购买力换算、财富漂流、宏观数据查询和 AI 文案生成接口
+- 微信小程序前端：负责输入收集、接口调用、结果展示、海报生成与分享
 
-项目同时尝试引入 AI 文案，让结果更有情绪和传播性。
+当前开发配置以本地联调为默认方式：
 
-## 2. 当前仓库结构
+- 小程序 `develop` 环境默认请求 `http://127.0.0.1:8000`
+- 小程序 `trial` / `release` 环境必须切换到真实可访问的测试或生产 API 域名
 
-```text
-money_time_machine/
-├── main.py                         # FastAPI 入口与接口定义
-├── services/
-│   ├── ai_service.py               # AI 文案服务
-│   ├── calculator.py               # 购买力计算服务
-│   └── fallback_data.py            # 无外部依赖时的本地兜底数据
-├── pages/
-│   ├── time_machine/               # 小程序：时空换算页
-│   └── wealth_drift/               # 小程序：财富漂流页
-├── init_db.sql                     # 数据库建表脚本
-├── seed_macro_data.py              # 宏观数据初始化脚本
-├── seed_city_data.py               # 城市数据初始化脚本
-├── test_health.py                  # 健康检查测试
-├── test_drift.py                   # 业务测试
-├── PRD.md                          # 产品需求文档
-├── TRD.md                          # 技术需求文档
-├── API_TEST_GUIDE.md               # convert 接口测试说明
-└── DRIFT_API_TEST_GUIDE.md         # drift 接口测试说明
-```
+## 主要功能
 
-## 3. 功能说明
+### 时空等值转换器
 
-### 3.1 时空等值转换器
+页面：`pages/time_machine/time_machine`
 
 输入：
 
-- `amount`：原始金额，必须大于 0
-- `source_year`：起始年份，当前限制为 1980-2025
-- `city`：城市名称，当前内置校验城市为北京、上海、广州、深圳、杭州、成都、武汉、西安、南京、重庆
+- 金额 `amount`
+- 起始年份 `source_year`
+- 城市 `city`
 
 输出：
 
-- `equivalent_amount`：折算后的等值金额
-- `items`：商品价格对比列表
-- `ai_comment`：AI 或兜底文案
+- `equivalent_amount`：折算到 2024 年的等值金额
+- `items`：3 条商品价格对比
+- `ai_comment`：AI 时代感点评
 
-计算公式：
+页面特性：
 
-```text
-equivalent_value
-= amount × (0.4 × CPI比率 + 0.4 × M2修正累计比率 + 0.2 × 房产指数比率)
-```
+- 复古视觉风格
+- 统一接口请求与错误处理
+- 商品价格卡片展示
 
-### 3.2 财富漂流瓶
+### 财富漂流瓶
+
+页面：`pages/wealth_drift/wealth_drift`
 
 输入：
 
-- `current_city`：当前城市
-- `monthly_income`：月收入，必须大于 0
-- `target_city`：目标城市
+- 当前城市 `current_city`
+- 目标城市 `target_city`
+- 月收入 `monthly_income`
 
 输出：
 
-- `equivalent_amount`：换城后的等值购买力
-- `wealth_ratio`：等值收入 / 目标城市中位数收入
+- `equivalent_amount`：迁移后的等值购买力
+- `wealth_ratio`：等值收入 / 目标城市中位收入
 - `identity_label`：身份标签
-- `city_comparison`：城市差异描述
-- `ai_essay`：AI 或兜底感言
+- `city_comparison`：城市差异文案
+- `ai_essay`：AI 感言
 
-计算公式：
+页面特性：
 
-```text
-equivalent_amount = monthly_income × current_city_coli / target_city_coli
-wealth_ratio = equivalent_amount / target_city_median_income
-```
+- 城市搜索与选择
+- 漂流结果结构化展示
+- AI 点评补充
+- 海报生成、保存和分享
 
-身份标签规则：
-
-- `> 5`：县城土豪
-- `> 2`：体面名流
-- `> 0.8`：平替生活
-- `<= 0.8`：生存挑战
-
-## 4. 技术架构
+## 技术栈
 
 ### 后端
 
-- 框架：FastAPI
-- 配置：Pydantic Settings
-- 数据源：Supabase
-- AI：DeepSeek Chat Completions API
+- FastAPI
+- Pydantic / pydantic-settings
+- Supabase Python SDK
+- Requests
+- DeepSeek Chat Completions API
 
 ### 前端
 
-- 框架：微信小程序原生 WXML / WXSS / JS
-- 页面：
-  - `pages/time_machine/time_machine`
-  - `pages/wealth_drift/wealth_drift`
+- 微信小程序原生 WXML / WXSS / JavaScript
+- `wx.request`
+- Canvas 海报生成
 
-## 5. 数据设计
+## 目录结构
 
-数据库核心表有三张：
+```text
+money_time_machine/
+├── main.py                              # FastAPI 入口
+├── services/
+│   ├── ai_service.py                    # AI 文案服务
+│   ├── calculator.py                    # 购买力计算逻辑
+│   ├── item_metadata.py                 # 商品元数据
+│   ├── time_machine/
+│   │   ├── api.js                       # 时光机接口封装
+│   │   └── shared.js                    # 时光机共享常量
+│   └── wealth_drift/
+│       ├── presenter.js                 # 财富漂流展示数据整理
+│       └── real.js                      # 财富漂流真实接口请求
+├── utils/
+│   ├── api.js                           # 小程序统一请求层
+│   ├── apiConfig.js                     # 小程序环境 API 地址配置
+│   ├── cache.js                         # 接口缓存
+│   └── poster.js                        # 海报生成
+├── pages/
+│   ├── time_machine/                    # 时空等值转换器页面
+│   └── wealth_drift/                    # 财富漂流瓶页面
+├── backend/init_db.sql                  # 数据库建表脚本
+├── seed_macro_data.py                   # 宏观数据导入脚本
+├── seed_city_data.py                    # 城市价格数据导入脚本
+├── test_health.py                       # 健康检查测试
+├── test_drift.py                        # 核心接口与计算测试
+├── API_TEST_GUIDE.md                    # convert 接口测试指南
+└── DRIFT_API_TEST_GUIDE.md              # drift 接口测试指南
+```
 
-- `macro_economics`
-  - 按年份保存 CPI、M2、GDP、房价指数
-- `city_data`
-  - 保存城市 COLI、收入中位数、省份等基础信息
-- `city_prices`
-  - 保存城市-年份-商品维度的价格数据
+## 环境要求
 
-注意：
+推荐环境：
 
-- `init_db.sql` 里的 `city_prices` 通过 `city_id` 关联城市
-- 原始代码按 `city_name` 直接查 `city_prices`，这一点已在代码中兼容处理
+- Python 3.10+
+- 微信开发者工具
+- 可访问的 Supabase 项目
+- 可用的 DeepSeek API Key
 
-## 6. 运行说明
+依赖列表见 `requirements.txt`。
 
-### 6.1 安装依赖
+## 安装步骤
+
+### 1. 创建虚拟环境并安装依赖
 
 ```bash
 python3 -m venv venv
@@ -134,9 +137,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 6.2 环境变量
+### 2. 配置环境变量
 
-如果接 Supabase / DeepSeek，请配置 `.env`：
+在项目根目录创建或更新 `.env`：
 
 ```env
 SUPABASE_URL=your_supabase_url
@@ -144,77 +147,102 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
-### 6.3 启动后端
+变量说明：
+
+- `SUPABASE_URL`：Supabase 项目地址
+- `SUPABASE_SERVICE_ROLE_KEY`：Supabase 服务端密钥
+- `DEEPSEEK_API_KEY`：DeepSeek 接口密钥
+
+说明：
+
+- 缺少 Supabase 配置时，后端仍可启动，但真实数据接口会返回不可用错误
+- 缺少 DeepSeek Key 时，涉及 AI 文案生成的接口会返回 502
+
+## 本地开发启动
+
+### 启动后端
+
+方式一：
 
 ```bash
+source venv/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-或者：
+方式二：
 
 ```bash
 bash run.sh
 ```
 
-### 6.4 启动小程序
-
-用微信开发者工具打开项目根目录即可。前端当前默认请求：
+本地服务地址：
 
 ```text
 http://127.0.0.1:8000
 ```
 
-## 7. 兜底机制
+Swagger 文档地址：
 
-为了让项目在本地没有 Supabase、没有 DeepSeek、甚至只是看代码时也能基本运行，我补了兜底策略：
+```text
+http://127.0.0.1:8000/docs
+```
 
-- Supabase 未安装或环境变量缺失时，后端自动切换到本地样例数据
-- DeepSeek Key 缺失时，AI 文案自动回退到模板文案
-- `city_prices` 缺失时，接口回退到默认商品价格
+### 启动小程序
 
-这样至少可以保证：
+1. 用微信开发者工具打开项目根目录
+2. 保持当前环境为 `develop`
+3. 小程序会通过 `utils/apiConfig.js` 默认请求 `http://127.0.0.1:8000`
+4. 可直接在本地调试页面样式、交互和接口联动
 
-- `/health` 可返回健康状态
-- `/api/v1/convert` 在常见示例上可返回结果
-- `/api/v1/drift` 在内置城市样例上可返回结果
+## 小程序 API 配置
 
-## 8. 这次代码审阅发现的问题
+`utils/apiConfig.js` 当前规则如下：
 
-### 已修复
+- `develop`：默认使用 `http://127.0.0.1:8000`
+- `trial`：需要手动填写测试环境域名
+- `release`：需要手动填写生产环境域名
 
-- `main.py` 使用了未定义的 `logger`，会在城市查询失败时抛出运行错误
-- 应用在导入阶段就强依赖 Supabase，缺配置时服务无法启动
-- `/api/v1/convert` 会把 `HTTPException` 再包一层，导致错误语义不清
-- `services/calculator.py` 查询 `city_prices` 时使用了和建表脚本不一致的 `city_name` 字段
-- M2 累乘没有显式按年份排序，理论上会引入不稳定结果
-- 商品购买力对比在 `price_then == 0` 时存在除零风险
-- 小程序前端请求端口写成了 `8003`，与 `run.sh` 的 `8000` 不一致
-- WXML 使用了 `h1` / `h2` 标签，不符合小程序语法习惯
-- 小程序错误展示对 FastAPI 的数组型校验错误支持不足
-- `app.json` 引用了 `sitemap.json`，但仓库里缺少该文件
-- `requirements.txt` 缺少 `requests`，而 AI 服务实际依赖它
+行为说明：
 
-### 仍然存在的风险
+- 开发环境允许本地地址，方便做页面和交互细节修改
+- 体验版和正式版不允许继续指向本地地址
+- `trial` / `release` 未配置地址或误配到本地地址时，小程序会直接报错阻止继续使用
 
-- 本地环境当前未安装 `fastapi` / `pytest`，所以我无法在这个工作区直接跑接口与测试
-- `test_drift.py` 与真实外部依赖强相关，后续更适合补 mock 或测试专用 fixture
-- `seed_macro_data.py` 中使用了 `is_forecast` 字段，但 `init_db.sql` 目前没有该列
-- `TRD.md` 里的 API 示例代码块存在未闭合片段，文档可读性一般
-- 小程序当前城市输入仍是自由文本，长期看更适合改成下拉选择或可搜索选择器
-
-## 9. 接口摘要
-
-### `GET /health`
-
-返回服务名、版本号和数据库状态。
+## 后端接口
 
 ### `GET /`
 
-返回欢迎信息和文档入口。
+返回欢迎信息和 `/docs` 文档入口。
+
+### `GET /health`
+
+返回：
+
+- `status`
+- `app_name`
+- `app_version`
+- `database_status`
+
+说明：
+
+- Supabase 正常时，`database_status` 通常为 `connected`
+- Supabase 未初始化时，`database_status` 为 `disconnected`
+
+### `GET /api/v1/macro`
+
+用于查询宏观经济数据，支持参数：
+
+- `year`
+- `start_year`
+- `end_year`
+- `limit`
+- `offset`
+- `sort`
+- `order`
 
 ### `POST /api/v1/convert`
 
-示例：
+请求示例：
 
 ```json
 {
@@ -224,21 +252,142 @@ http://127.0.0.1:8000
 }
 ```
 
+响应字段：
+
+- `equivalent_amount`
+- `items`
+- `ai_comment`
+
 ### `POST /api/v1/drift`
 
-示例：
+请求示例：
 
 ```json
 {
   "current_city": "上海",
   "monthly_income": 10000,
-  "target_city": "开封"
+  "target_city": "成都"
 }
 ```
 
-## 10. 建议的下一步
+响应字段：
 
-- 补一套真正可运行的 `pytest` fixture，把 Supabase 和 AI 请求都 mock 掉
-- 给小程序加城市选择器，避免用户输入非法城市
-- 把后端的数据访问从 `main.py` 中拆出去，形成 repository/service 分层
-- 补 README 中的接口响应示例截图和开发流程
+- `current_city`
+- `target_city`
+- `current_city_coli`
+- `target_city_coli`
+- `equivalent_amount`
+- `target_city_median_income`
+- `wealth_ratio`
+- `identity_label`
+- `city_comparison`
+- `ai_essay`
+
+## 业务规则
+
+### 时空换算公式
+
+```text
+equivalent_value
+= amount × (0.4 × CPI比率 + 0.4 × M2修正累计比率 + 0.2 × 房产指数比率)
+```
+
+### 财富漂流公式
+
+```text
+equivalent_amount = monthly_income × current_city_coli / target_city_coli
+wealth_ratio = equivalent_amount / target_city_median_income
+```
+
+### 身份标签规则
+
+- `wealth_ratio > 5`：县城土豪
+- `wealth_ratio > 2`：体面名流
+- `wealth_ratio > 0.8`：平替生活
+- `wealth_ratio <= 0.8`：生存挑战
+
+## 开发说明
+
+### 前端
+
+- 小程序统一请求入口在 `utils/api.js`
+- 时光机页面只保留真实接口调用，不再保留本地 mock 模式
+- 财富漂流页面通过 `services/wealth_drift/real.js` 请求后端，并通过 `services/wealth_drift/presenter.js` 生成展示数据
+
+### 后端
+
+- 入口文件：`main.py`
+- 购买力计算：`services/calculator.py`
+- AI 调用：`services/ai_service.py`
+- 数据导入脚本：`seed_macro_data.py`、`seed_city_data.py`
+
+## 测试与验证
+
+### 自动化测试
+
+```bash
+./venv/bin/pytest -q test_health.py test_drift.py
+```
+
+测试覆盖：
+
+- 健康检查接口
+- 货币购买力转换接口
+- 财富漂流接口
+- 核心计算函数
+
+说明：
+
+- 测试中对 Supabase 和 AI 请求做了 mock
+- 适合本地快速回归验证，不依赖线上服务状态
+
+### Python 语法检查
+
+```bash
+./venv/bin/python -m py_compile main.py services/ai_service.py services/calculator.py test_health.py test_drift.py
+```
+
+### 手工联调建议
+
+1. 启动本地 FastAPI 服务
+2. 用微信开发者工具打开项目并保持 `develop` 环境
+3. 逐页验证输入、加载、错误提示、结果展示和海报功能
+4. 需要看接口结构时，可访问本地 `/docs`
+
+## 数据与部署说明
+
+### 数据依赖
+
+后端依赖 Supabase 中的真实数据表：
+
+- `macro_economics`
+- `city_data`
+- `city_prices`
+
+建表脚本见 `backend/init_db.sql`。
+
+### 发布前检查
+
+提交体验版或正式版前，建议至少确认：
+
+- `utils/apiConfig.js` 中 `trial` / `release` 已配置正确域名
+- 微信后台已配置 request 合法域名
+- Supabase 数据完整
+- DeepSeek API 可用
+- 本地自动化测试通过
+- 小程序关键页面手工联调通过
+
+## 注意事项
+
+- 当前默认开发联调地址就是 `http://127.0.0.1:8000`
+- 如果本地后端未启动，小程序会直接提示网络错误
+- Supabase 不可用时，`/api/v1/macro`、`/api/v1/convert`、`/api/v1/drift` 无法返回真实业务结果
+- DeepSeek 不可用时，AI 文案接口会失败，不再自动生成本地兜底文案
+- `wealth_drift` 页面展示模型仍依赖前端内置城市样本信息做展示排版
+- `seed_macro_data.py` 里的 `is_forecast` 字段与当前建表脚本仍有差异，后续若继续完善数据导入需要一起调整
+
+## 相关文档
+
+- `API_TEST_GUIDE.md`
+- `DRIFT_API_TEST_GUIDE.md`
+- `backend/init_db.sql`

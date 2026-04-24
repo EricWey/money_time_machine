@@ -11,25 +11,6 @@
     <view class="card-stamp">复古换算</view>
     <text class="mode-tag">{{modeLabel}}</text>
 
-    <view class="mode-switch">
-      <view
-        class="mode-option {{debugMode === 'api' ? 'active' : ''}}"
-        data-mode="api"
-        bindtap="switchMode"
-      >
-        <text class="mode-option-title">真实接口</text>
-        <text class="mode-option-sub">走 FastAPI + Supabase</text>
-      </view>
-      <view
-        class="mode-option {{debugMode === 'local' ? 'active' : ''}}"
-        data-mode="local"
-        bindtap="switchMode"
-      >
-        <text class="mode-option-title">本地演示</text>
-        <text class="mode-option-sub">纯前端数据，便于调试</text>
-      </view>
-    </view>
-
     <view class="field-group">
       <text class="field-label">金额</text>
       <view class="money-input">

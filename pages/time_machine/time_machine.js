@@ -1,5 +1,5 @@
 const { YEAR_OPTIONS, CITY_OPTIONS } = require('../../services/time_machine/shared')
-const { getModeConfig } = require('../../services/time_machine/modes')
+const { convert } = require('../../services/time_machine/api')
 
 Page({
   data: {
@@ -12,9 +12,8 @@ Page({
     selectedCity: CITY_OPTIONS[0],
     loading: false,
     loadingText: '',
-    debugMode: 'api',
-    modeLabel: getModeConfig('api').label,
-    buttonSubtext: getModeConfig('api').buttonSubtext,
+    modeLabel: '当年你爸妈挣得可不少哦',
+    buttonSubtext: '带你回到那个年代',
     result: null,
     error: ''
   },
@@ -44,24 +43,8 @@ Page({
     })
   },
 
-  switchMode(e) {
-    const nextMode = e.currentTarget.dataset.mode
-    if (!nextMode || nextMode === this.data.debugMode) {
-      return
-    }
-
-    const nextConfig = getModeConfig(nextMode)
-    this.setData({
-      debugMode: nextMode,
-      modeLabel: nextConfig.label,
-      buttonSubtext: nextConfig.buttonSubtext,
-      error: '',
-      result: null
-    })
-  },
-
   convert() {
-    const { amount, selectedYear, selectedCity, debugMode } = this.data
+    const { amount, selectedYear, selectedCity } = this.data
     const numericAmount = Number(amount)
 
     if (!amount || Number.isNaN(numericAmount) || numericAmount <= 0) {
@@ -83,26 +66,22 @@ Page({
     }
 
     this.loadingTimer = setTimeout(() => {
-      this.runConversion(debugMode, numericAmount, selectedYear, selectedCity)
+      this.runConversion(numericAmount, selectedYear, selectedCity)
     }, 500)
   },
 
-  async runConversion(modeKey, amount, year, city) {
-    const modeConfig = getModeConfig(modeKey)
-
+  async runConversion(amount, year, city) {
     try {
-      const result = await modeConfig.service.convert(amount, year, city)
+      const result = await convert(amount, year, city)
       this.setData({
         loading: false,
         result,
-        modeLabel: modeConfig.label,
         error: ''
       })
     } catch (error) {
       this.setData({
         loading: false,
         result: null,
-        modeLabel: modeConfig.label,
         error: error.message || '转换失败，请稍后重试。'
       })
     }

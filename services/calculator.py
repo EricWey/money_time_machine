@@ -14,7 +14,6 @@ try:
 except ImportError:  # pragma: no cover
     Client = Any
 
-from services.fallback_data import FALLBACK_CITY_PRICES, FALLBACK_MACRO_DATA
 from services.item_metadata import get_item_metadata
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,8 @@ class Calculator:
             包含宏观经济数据的字典，如果查询失败返回None
         """
         if not self.supabase:
-            return FALLBACK_MACRO_DATA.get(year)
+            logger.warning("Supabase 未初始化，无法查询宏观经济数据")
+            return None
 
         try:
             result = self.supabase.table("macro_economics").select("*").eq("year", year).execute()
@@ -106,18 +106,8 @@ class Calculator:
         """
         try:
             if not self.supabase:
-                yearly_data = [
-                    FALLBACK_MACRO_DATA[year]
-                    for year in sorted(FALLBACK_MACRO_DATA)
-                    if source_year <= year <= target_year
-                ]
-                if not yearly_data:
-                    return 1.0
-
-                m2_adj_ratio = 1.0
-                for data in yearly_data:
-                    m2_adj_ratio *= (1 + data["m2_adj"] / 100)
-                return round(m2_adj_ratio, 6)
+                logger.warning("Supabase 未初始化，无法查询 M2 调整值")
+                return 1.0
 
             # 获取起始年到目标年之间的所有数据
             result = self.supabase.table("macro_economics").select("year", "m2_adj").gte("year", source_year).lte("year", target_year).execute()
@@ -149,7 +139,8 @@ class Calculator:
             实物价格数据列表，查询失败返回None
         """
         if not self.supabase:
-            return FALLBACK_CITY_PRICES.get(city, {}).get(year)
+            logger.warning("Supabase 未初始化，无法查询城市商品价格")
+            return None
 
         try:
             result = self.supabase.table("city_prices").select("*").eq("city_name", city).eq("year", year).execute()
@@ -167,10 +158,6 @@ class Calculator:
                     return result.data
         except Exception as e:
             logger.error(f"获取 {city} {year} 年实物价格数据时出错: {str(e)}")
-
-        fallback_prices = FALLBACK_CITY_PRICES.get(city, {}).get(year)
-        if fallback_prices:
-            return fallback_prices
 
         logger.warning(f"未找到 {city} {year} 年的实物价格数据")
         return None

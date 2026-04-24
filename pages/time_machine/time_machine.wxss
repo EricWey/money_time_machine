@@ -115,47 +115,6 @@
   font-size: 20rpx;
 }
 
-.mode-switch {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 24rpx;
-}
-
-.mode-option {
-  flex: 1;
-  padding: 18rpx 18rpx 16rpx;
-  border: 2rpx solid rgba(102, 67, 46, 0.14);
-  border-radius: 22rpx;
-  background: rgba(255, 250, 241, 0.7);
-  transition: all 0.2s ease;
-}
-
-.mode-option.active {
-  border-color: rgba(115, 61, 33, 0.36);
-  background: linear-gradient(180deg, rgba(139, 79, 51, 0.18), rgba(255, 248, 236, 0.92));
-  box-shadow: 0 10rpx 18rpx rgba(90, 51, 29, 0.1);
-}
-
-.mode-option-title,
-.mode-option-sub {
-  display: block;
-}
-
-.mode-option-title {
-  font-size: 26rpx;
-  font-weight: 700;
-  color: #5c3927;
-}
-
-.mode-option-sub {
-  margin-top: 8rpx;
-  font-size: 20rpx;
-  line-height: 1.5;
-  color: #7a5a42;
-}
-
 .field-grid {
   display: flex;
   gap: 20rpx;

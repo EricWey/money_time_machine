@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://127.0.0.1:8000'
+const { getApiBaseUrl } = require('./apiConfig')
+
+const API_BASE_URL = getApiBaseUrl()
 const REQUEST_TIMEOUT = 10000
 
 function normalizeErrorMessage(detail, fallbackMessage) {
@@ -77,7 +79,7 @@ function request({ path, method = 'GET', data, timeout = REQUEST_TIMEOUT }) {
         reject({
           type: 'network',
           recoverable: true,
-          message: '网络连接失败，请确认后端服务可访问后重试。'
+          message: '网络连接失败，请确认真实 API 服务可访问后重试。'
         })
       }
     })

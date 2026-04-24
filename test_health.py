@@ -1,10 +1,28 @@
 from fastapi.testclient import TestClient
+import main
+
 from main import app
 
 client = TestClient(app)
 
-def test_health_check():
+
+class _SupabaseHealthStub:
+    def table(self, _name):
+        return self
+
+    def select(self, _fields):
+        return self
+
+    def limit(self, _count):
+        return self
+
+    def execute(self):
+        return type("Result", (), {"data": [{"year": 2024}]})()
+
+
+def test_health_check(monkeypatch):
     """测试健康检查接口"""
+    monkeypatch.setattr(main, "supabase", _SupabaseHealthStub())
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()

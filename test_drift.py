@@ -6,9 +6,87 @@
 
 import pytest
 from fastapi.testclient import TestClient
+import main
+
 from main import app, calculate_wealth_ratio, get_identity_label, generate_city_comparison
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def patch_external_dependencies(monkeypatch):
+    class SupabaseStub:
+        def table(self, _name):
+            return self
+
+        def select(self, *_args, **_kwargs):
+            return self
+
+        def limit(self, _count):
+            return self
+
+        def execute(self):
+            return type("Result", (), {"data": [{"year": 2024}]})()
+
+    monkeypatch.setattr(main, "supabase", SupabaseStub())
+    monkeypatch.setattr(main.calculator, "supabase", main.supabase)
+    monkeypatch.setattr(main.calculator, "calculate_equivalent_value", lambda amount, source_year, target_year: 432.1)
+    monkeypatch.setattr(
+        main.calculator,
+        "build_random_item_comparison_set",
+        lambda city, source_year, target_year, sample_size=3: [
+            {
+                "name": "梗米",
+                "unit": "元/斤",
+                "category": "food",
+                "note": "米价对比",
+                "price_then": 0.8,
+                "price_now": 6.2,
+            },
+            {
+                "name": "精瘦肉",
+                "unit": "元/斤",
+                "category": "food",
+                "note": "肉价对比",
+                "price_then": 2.5,
+                "price_now": 25.0,
+            },
+            {
+                "name": "理发",
+                "unit": "元/次",
+                "category": "service",
+                "note": "服务价格对比",
+                "price_then": 1.0,
+                "price_now": 35.0,
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        main.calculator,
+        "calculate_purchasing_power_comparison",
+        lambda items, source_year, target_year=2024: [
+            {
+                **item,
+                "purchasing_power": "上涨 100.0%",
+            }
+            for item in items
+        ],
+    )
+    monkeypatch.setattr(
+        main.ai_service,
+        "generate_comment",
+        lambda source_year, amount, equivalent_amount, price_items: "AI点评",
+    )
+    monkeypatch.setattr(main.ai_service, "generate_custom_comment", lambda prompt: "AI感言")
+
+    city_records = {
+        "上海": {"city_name": "上海", "coli_index": 100, "median_income": 8100},
+        "开封": {"city_name": "开封", "coli_index": 52, "median_income": 3500},
+        "北京": {"city_name": "北京", "coli_index": 98, "median_income": 7800},
+        "郑州": {"city_name": "郑州", "coli_index": 65, "median_income": 4400},
+        "鹤岗": {"city_name": "鹤岗", "coli_index": 30, "median_income": 2500},
+    }
+    monkeypatch.setattr(main, "get_city_data", lambda city_name: city_records.get(city_name))
 
 class TestWealthRatioCalculation:
     """测试财富比率计算"""
@@ -169,7 +247,7 @@ class TestConvertAPI:
         assert "equivalent_amount" in data
         assert "items" in data
         assert "ai_comment" in data
-        assert data["equivalent_amount"] > 0
+        assert data["equivalent_amount"] == 432.1
         assert len(data["items"]) == 3
         for item in data["items"]:
             assert item["unit"]
@@ -190,7 +268,7 @@ class TestConvertAPI:
         response = client.post("/api/v1/convert", json={
             "amount": 100,
             "source_year": 1990,
-            "city": "长沙"
+            "city": "火星"
         })
         assert response.status_code == 422
         assert "无效" in response.json()["detail"][0]["msg"]

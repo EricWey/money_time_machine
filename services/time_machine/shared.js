@@ -113,10 +113,6 @@ function formatCurrency(value) {
   return Number(value).toFixed(2)
 }
 
-function buildVintageComment(amount, year, city, equivalentAmount) {
-  return `${year}年的${amount}元，在${city}像一张刚发下来的工资条。如今折算成约${formatCurrency(equivalentAmount)}元，时代换了底色，柴米油盐的分量也悄悄变重了。`
-}
-
 function getItemMeta(itemName, index) {
   const apiMeta = API_ITEM_METADATA[itemName]
   if (apiMeta) {
@@ -154,6 +150,5 @@ module.exports = {
   CITY_OPTIONS,
   ITEM_CATALOG,
   formatCurrency,
-  buildVintageComment,
   normalizeApiItems
 }

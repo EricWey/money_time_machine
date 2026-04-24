@@ -29,7 +29,7 @@ Content-Type: application/json
 ### 1. 使用curl命令测试
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/convert \
+curl -X POST <YOUR_API_BASE_URL>/api/v1/convert \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 100,
@@ -44,7 +44,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/convert \
 1. 打开Postman
 2. 点击"New"创建新请求
 3. 选择"POST"方法
-4. 输入URL：`http://127.0.0.1:8000/api/v1/convert`
+4. 输入URL：`<YOUR_API_BASE_URL>/api/v1/convert`
 
 #### 步骤2：设置请求头
 1. 点击"Headers"标签
@@ -75,7 +75,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/convert \
 import requests
 import json
 
-url = "http://127.0.0.1:8000/api/v1/convert"
+url = "<YOUR_API_BASE_URL>/api/v1/convert"
 headers = {
     "Content-Type": "application/json"
 }
@@ -135,7 +135,7 @@ print(response.json())
 
 ### 测试用例1：正常转换请求
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/convert \
+curl -X POST <YOUR_API_BASE_URL>/api/v1/convert \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 100,
@@ -148,7 +148,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/convert \
 
 ### 测试用例2：不同年份转换
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/convert \
+curl -X POST <YOUR_API_BASE_URL>/api/v1/convert \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 500,
@@ -161,7 +161,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/convert \
 
 ### 测试用例3：不同城市转换
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/convert \
+curl -X POST <YOUR_API_BASE_URL>/api/v1/convert \
   -H "Content-Type: application/json" \
   -d '{
     "amount": 1000,
@@ -260,7 +260,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/convert \
 # 使用Apache Bench进行压力测试
 ab -n 1000 -c 10 -H "Content-Type: application/json" \
    -p request.json \
-   http://127.0.0.1:8000/api/v1/convert
+   <YOUR_API_BASE_URL>/api/v1/convert
 ```
 
 ### request.json文件内容
@@ -276,7 +276,7 @@ ab -n 1000 -c 10 -H "Content-Type: application/json" \
 
 1. **数据准确性**：宏观经济数据基于历史统计，仅供参考
 2. **AI评价**：AI评价基于模型生成，可能存在主观性
-3. **价格数据**：实物价格数据可能不完整，系统会使用默认数据补充
+3. **价格数据**：实物价格数据需要在真实数据源中完整可用，否则接口会直接返回错误
 4. **性能考虑**：大量并发请求可能影响响应速度
 5. **API限制**：建议合理控制请求频率，避免过度调用
 

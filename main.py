@@ -15,9 +15,13 @@ except ImportError:  # pragma: no cover
 
 from services.ai_service import AIService
 from services.calculator import Calculator
-from services.fallback_data import FALLBACK_CITY_DATA, VALID_CITIES
 
 logger = logging.getLogger(__name__)
+SUPPORTED_CITIES = {
+    "北京", "上海", "天津", "重庆", "石家庄", "太原", "呼和浩特", "沈阳", "长春", "哈尔滨",
+    "南京", "杭州", "合肥", "福州", "南昌", "济南", "郑州", "武汉", "长沙", "广州",
+    "南宁", "海口", "成都", "贵阳", "昆明", "拉萨", "西安", "兰州", "西宁", "银川", "乌鲁木齐"
+}
 
 class Settings(BaseSettings):
     """应用配置"""
@@ -37,12 +41,12 @@ def init_supabase():
     """初始化 Supabase 客户端"""
     global supabase
     if not create_client:
-        logger.warning("supabase 包未安装，使用本地兜底数据")
+        logger.warning("supabase 包未安装，无法初始化真实数据源")
         supabase = None
         return
 
     if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_ROLE_KEY:
-        logger.warning("未配置 Supabase 环境变量，使用本地兜底数据")
+        logger.warning("未配置 Supabase 环境变量，无法初始化真实数据源")
         supabase = None
         return
 
@@ -52,7 +56,7 @@ def init_supabase():
             settings.SUPABASE_SERVICE_ROLE_KEY
         )
     except Exception as exc:
-        logger.warning("Supabase 初始化失败，使用本地兜底数据: %s", exc)
+        logger.warning("Supabase 初始化失败: %s", exc)
         supabase = None
 
 # 初始化 Supabase 客户端
@@ -72,8 +76,8 @@ class ConvertRequest(BaseModel):
     @field_validator('city')
     def validate_city(cls, v):
         """验证城市名称"""
-        if v not in VALID_CITIES:
-            raise ValueError(f"城市名称无效，支持的城市: {', '.join(VALID_CITIES)}")
+        if v not in SUPPORTED_CITIES:
+            raise ValueError(f"城市名称无效，支持的城市: {', '.join(sorted(SUPPORTED_CITIES))}")
         return v
 
 class Item(BaseModel):
@@ -131,8 +135,8 @@ async def health_check():
         db_status = "connected"
         if supabase:
             supabase.table("macro_economics").select("year").limit(1).execute()
-        elif not calculator.get_macro_data(2024):
-            db_status = "error: fallback data unavailable"
+        else:
+            db_status = "disconnected"
     except Exception as e:
         db_status = f"error: {str(e)}"
     
@@ -178,76 +182,38 @@ async def get_macro_data(
         宏观经济数据列表
     """
     try:
-        if supabase:
-            try:
-                # 构建查询
-                query = supabase.table("macro_economics").select("*")
-                
-                # 应用筛选条件
-                if year:
-                    query = query.eq("year", year)
-                elif start_year and end_year:
-                    query = query.gte("year", start_year).lte("year", end_year)
-                elif start_year:
-                    query = query.gte("year", start_year)
-                elif end_year:
-                    query = query.lte("year", end_year)
-                
-                # 应用排序
-                if order.lower() == "desc":
-                    query = query.order(sort, ascending=False)
-                else:
-                    query = query.order(sort, ascending=True)
-                
-                # 应用分页
-                query = query.limit(limit).offset(offset)
-                
-                # 执行查询
-                result = query.execute()
-                
-                if result.data:
-                    # 格式化数据
-                    formatted_data = []
-                    for item in result.data:
-                        formatted_data.append({
-                            "year": item.get("year"),
-                            "cpi_index": item.get("cpi_index"),
-                            "m2_adj": item.get("m2_adj"),
-                            "property_index_nat": item.get("property_index_nat")
-                        })
-                    logger.info(f"从 Supabase 成功获取 {len(formatted_data)} 条宏观经济数据")
-                    return formatted_data
-                else:
-                    logger.warning("Supabase 中未找到宏观经济数据，返回兜底数据")
-            except Exception as e:
-                logger.error(f"从 Supabase 获取宏观经济数据时出错: {str(e)}")
-        else:
-            logger.warning("Supabase 未初始化，返回兜底数据")
-        
-        # 兜底数据处理（可以根据参数进行过滤）
-        fallback_data = [
-            # 兜底数据...
-        ]
-        
-        # 应用筛选条件到兜底数据
+        if not supabase:
+            raise HTTPException(status_code=503, detail="Supabase 未初始化，真实宏观数据不可用")
+
+        query = supabase.table("macro_economics").select("*")
+
         if year:
-            fallback_data = [item for item in fallback_data if item["year"] == year]
+            query = query.eq("year", year)
         elif start_year and end_year:
-            fallback_data = [item for item in fallback_data if start_year <= item["year"] <= end_year]
+            query = query.gte("year", start_year).lte("year", end_year)
         elif start_year:
-            fallback_data = [item for item in fallback_data if item["year"] >= start_year]
+            query = query.gte("year", start_year)
         elif end_year:
-            fallback_data = [item for item in fallback_data if item["year"] <= end_year]
-        
-        # 应用排序
-        fallback_data.sort(key=lambda x: x[sort], reverse=order.lower() == "desc")
-        
-        # 应用分页
-        fallback_data = fallback_data[offset:offset+limit]
-        
-        logger.info(f"返回 {len(fallback_data)} 条兜底宏观经济数据")
-        return fallback_data
+            query = query.lte("year", end_year)
+
+        query = query.order(sort, ascending=order.lower() != "desc")
+        query = query.limit(limit).offset(offset)
+        result = query.execute()
+
+        formatted_data = [
+            {
+                "year": item.get("year"),
+                "cpi_index": item.get("cpi_index"),
+                "m2_adj": item.get("m2_adj"),
+                "property_index_nat": item.get("property_index_nat")
+            }
+            for item in (result.data or [])
+        ]
+        logger.info("从 Supabase 成功获取 %s 条宏观经济数据", len(formatted_data))
+        return formatted_data
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
         logger.error(f"获取宏观经济数据失败: {str(e)}")
         raise HTTPException(status_code=500, detail=f"获取宏观经济数据失败: {str(e)}")
 
@@ -263,6 +229,9 @@ async def convert_purchasing_power(request: ConvertRequest):
         转换结果，包含等价值、商品对比和AI评价
     """
     try:
+        if not supabase:
+            raise HTTPException(status_code=503, detail="Supabase 未初始化，真实转换接口不可用")
+
         # 计算等价值
         equivalent_amount = calculator.calculate_equivalent_value(
             request.amount, 
@@ -273,7 +242,7 @@ async def convert_purchasing_power(request: ConvertRequest):
         if equivalent_amount is None:
             raise HTTPException(
                 status_code=500, 
-                detail="无法计算货币购买力等价值，请检查数据是否完整"
+                detail="无法计算货币购买力等价值，请检查 Supabase 中的数据是否完整"
             )
         
         items = calculator.build_random_item_comparison_set(
@@ -283,40 +252,8 @@ async def convert_purchasing_power(request: ConvertRequest):
             sample_size=3
         )
         
-        # 如果数据不足，使用默认商品数据
         if len(items) < 3:
-            default_items = [
-                {
-                    "name": "梗米",
-                    "unit": "元/斤",
-                    "category": "food",
-                    "note": "家庭主食的基础款，一斤米价最能照见日常饭桌的分量。",
-                    "price_then": 0.8,
-                    "price_now": 6.2
-                },
-                {
-                    "name": "精瘦肉",
-                    "unit": "元/斤",
-                    "category": "food",
-                    "note": "家常荤菜的代表，一斤肉价最容易让人感到餐桌成本的变化。",
-                    "price_then": 2.5,
-                    "price_now": 25.0
-                },
-                {
-                    "name": "理发",
-                    "unit": "元/次",
-                    "category": "service",
-                    "note": "高频生活服务的代表，一次理发最能反映人工服务价格的时代位移。",
-                    "price_then": 1.0,
-                    "price_now": 35.0
-                }
-            ]
-            
-            # 只添加缺少的商品
-            existing_names = {item["name"] for item in items}
-            for default_item in default_items:
-                if default_item["name"] not in existing_names and len(items) < 3:
-                    items.append(default_item.copy())
+            raise HTTPException(status_code=500, detail="商品价格数据不足，无法生成完整对比结果")
         
         # 计算购买力对比
         comparison_results = calculator.calculate_purchasing_power_comparison(
@@ -329,15 +266,12 @@ async def convert_purchasing_power(request: ConvertRequest):
         ai_comment = ai_service.generate_comment(
             request.source_year, 
             request.amount, 
-            equivalent_amount
+            equivalent_amount,
+            comparison_results
         )
         
         if not ai_comment:
-            ai_comment = ai_service.generate_fallback_comment(
-                request.source_year, 
-                request.amount, 
-                equivalent_amount
-            )
+            raise HTTPException(status_code=502, detail="AI 评价服务暂不可用")
         
         return {
             "equivalent_amount": equivalent_amount,
@@ -362,9 +296,6 @@ def get_city_data(city_name: str) -> Optional[dict]:
     Returns:
         城市数据字典，不存在返回None
     """
-    if city_name in FALLBACK_CITY_DATA:
-        return FALLBACK_CITY_DATA[city_name]
-
     if not supabase:
         return None
 
@@ -486,6 +417,9 @@ async def calculate_drift(request: DriftRequest):
         财富漂流结果
     """
     try:
+        if not supabase:
+            raise HTTPException(status_code=503, detail="Supabase 未初始化，真实漂流接口不可用")
+
         current_city_data = get_city_data(request.current_city)
         if not current_city_data:
             raise HTTPException(
@@ -532,7 +466,7 @@ async def calculate_drift(request: DriftRequest):
         )
 
         if not ai_essay:
-            ai_essay = f"从{request.current_city}到{request.target_city}，你的财富购买力发生了变化。身份标签：{identity_label}。"
+            raise HTTPException(status_code=502, detail="AI 感言服务暂不可用")
 
         return {
             "current_city": request.current_city,

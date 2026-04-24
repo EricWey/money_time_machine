@@ -117,38 +117,6 @@ function getHeroHint(currentCity, targetCity) {
   return `${currentCity}的工资条，漂到${targetCity}，可能直接改写朋友圈话术。`
 }
 
-function buildFallbackIdentityLabel(currentCity, targetCity, income, equivalentAmount, wealthRatio) {
-  if (currentCity.level === 'super' && targetCity.level === 'small' && equivalentAmount >= 15000) {
-    return '县城土豪'
-  }
-
-  if (targetCity.level === 'super' && wealthRatio < 0.7) {
-    return 'CBD气氛组'
-  }
-
-  if (wealthRatio >= 3) {
-    return `${targetCity.vibe}现金王`
-  }
-
-  if (wealthRatio >= 2) {
-    return `${targetCity.vibe}体面名流`
-  }
-
-  if (wealthRatio >= 1.2 && income >= 10000) {
-    return '奶茶自由体'
-  }
-
-  if (wealthRatio >= 0.9) {
-    return '平替生活家'
-  }
-
-  if (wealthRatio >= 0.65) {
-    return '合租哲学家'
-  }
-
-  return '通勤生存挑战'
-}
-
 function buildSummary(currentCity, targetCity, income, equivalentAmount, wealthRatio) {
   const ratioText = `${wealthRatio.toFixed(2)}x`
 
@@ -161,24 +129,6 @@ function buildSummary(currentCity, targetCity, income, equivalentAmount, wealthR
   }
 
   return `从${currentCity.name}漂到${targetCity.name}后，购买力只剩当地体面线的${ratioText}，生活不会立刻塌，但每次付款前都会更爱思考人生。`
-}
-
-function buildInsight(currentCity, targetCity, equivalentAmount) {
-  const housingGap = currentCity.metrics.housing - targetCity.metrics.housing
-
-  if (housingGap > 2500) {
-    return `${currentCity.name}里压着你情绪的房租，到了${targetCity.name}大概率会变成你的周末预算。`
-  }
-
-  if (housingGap < -1200) {
-    return `${targetCity.name}的房租会先给你上一课：工资也会漂流，但押一付三通常不会心软。`
-  }
-
-  if (equivalentAmount >= targetCity.medianIncome * 1.2) {
-    return `你在${targetCity.name}的状态，大概属于“工资不一定能炫耀，但拒绝拼单时已经没那么心虚”。`
-  }
-
-  return `${targetCity.name}对你来说不是降维打击，也不是轻松开挂，更像一场把预算表重新排版的人生小重构。`
 }
 
 function buildDimensionComment(key, ratio, currentCityName, targetCityName) {
@@ -249,10 +199,9 @@ function formatAiComment(comment) {
 function createDisplayResult(currentCityName, targetCityName, incomeValue, driftResponse) {
   const currentCity = CITY_MAP[currentCityName]
   const targetCity = CITY_MAP[targetCityName]
-  const income = Number(incomeValue)
-  const equivalentAmount = Number(driftResponse.equivalent_amount || income * currentCity.coli / targetCity.coli)
-  const wealthRatio = Number(driftResponse.wealth_ratio || 0)
-  const identityLabel = driftResponse.identity_label || buildFallbackIdentityLabel(currentCity, targetCity, income, equivalentAmount, wealthRatio)
+  const equivalentAmount = Number(driftResponse.equivalent_amount)
+  const wealthRatio = Number(driftResponse.wealth_ratio)
+  const identityLabel = driftResponse.identity_label
   const totalCurrentCost = Object.values(currentCity.metrics).reduce((sum, value) => sum + value, 0)
   const totalTargetCost = Object.values(targetCity.metrics).reduce((sum, value) => sum + value, 0)
   const savingsDelta = equivalentAmount - totalTargetCost
@@ -264,11 +213,11 @@ function createDisplayResult(currentCityName, targetCityName, incomeValue, drift
     wealthRatio: wealthRatio.toFixed(2),
     identityLabel,
     costComparison: buildComparisonItems(currentCity, targetCity),
-    summary: buildSummary(currentCity, targetCity, income, equivalentAmount, wealthRatio),
-    insight: driftResponse.city_comparison || buildInsight(currentCity, targetCity, equivalentAmount),
+    summary: buildSummary(currentCity, targetCity, Number(incomeValue), equivalentAmount, wealthRatio),
+    insight: driftResponse.city_comparison,
     totalCurrentCost: formatCurrency(totalCurrentCost),
     totalTargetCost: formatCurrency(totalTargetCost),
-    targetMedianIncome: formatCurrency(driftResponse.target_city_median_income || targetCity.medianIncome),
+    targetMedianIncome: formatCurrency(driftResponse.target_city_median_income),
     monthlyBalance: formatCurrency(savingsDelta),
     moodTag: savingsDelta >= 1500 ? '月底有余粮' : savingsDelta >= 0 ? '还能稳住' : '请重新做表',
     roastLine: savingsDelta >= 1500

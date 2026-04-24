@@ -239,8 +239,8 @@
 
         <view class="expert-card">
           <view class="expert-head">
-            <text class="copy-title">专家点评</text>
-            <text class="expert-sub">由 `/api/v1/convert` 返回的 AI 点评补充这次漂流的情绪注脚。</text>
+            <text class="copy-title">点评</text>
+            <text class="expert-sub">由DEEPSEEK点评补充这次漂流的情绪注脚。</text>
           </view>
 
           <view wx:if="{{loadingComment}}" class="comment-loading">

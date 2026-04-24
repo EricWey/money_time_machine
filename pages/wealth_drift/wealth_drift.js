@@ -6,7 +6,7 @@ const {
   getHeroHint,
   createDisplayResult,
   formatAiComment
-} = require('../../services/wealth_drift/local')
+} = require('../../services/wealth_drift/presenter')
 const {
   buildPayloads,
   fetchDriftResult,
